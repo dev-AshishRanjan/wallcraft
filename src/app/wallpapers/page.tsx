@@ -15,6 +15,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 import { FadeInImage } from "@/components/ui/fade-in-image";
+import { Expand } from "lucide-react";
+import { WallpaperModal } from "@/components/ui/wallpaper-modal";
 
 // --- CONFIG ---
 // Replace with your actual username and repo name
@@ -48,6 +50,9 @@ export default function WallpapersPage() {
   const [themeFilter, setThemeFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const [isFiltering, setIsFiltering] = useState(false);
+
+  const [previewWallpaper, setPreviewWallpaper] = useState<WallpaperEntry | null>(null);
+  const [previewTheme, setPreviewTheme] = useState<string>("Nord");
 
   useEffect(() => {
     async function loadData() {
@@ -221,14 +226,29 @@ export default function WallpapersPage() {
                     />
 
                     {/* Hover Overlay */}
-                    <div className="absolute inset-0 bg-nord-0/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm z-20">
+                    <div className="absolute inset-0 bg-nord-0/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px] z-20">
+                      {/* PREVIEW BUTTON (Opens Modal) */}
                       <Button
-                        variant="default"
-                        className="bg-nord-8 text-nord-0 font-bold hover:bg-nord-9 hover:scale-105 transition-transform"
+                        size="icon"
+                        variant="secondary"
+                        className="bg-nord-4 text-nord-0 hover:bg-white rounded-full w-12 h-12 shadow-xl"
+                        title="Preview & Options"
+                        onClick={() => {
+                          setPreviewTheme(displayTheme);
+                          setPreviewWallpaper(wp);
+                        }}
+                      >
+                        <Expand className="w-5 h-5" />
+                      </Button>
+
+                      {/* QUICK DOWNLOAD (Keeps existing function) */}
+                      <Button
+                        size="icon"
+                        className="bg-nord-8 text-nord-0 hover:bg-nord-9 rounded-full w-12 h-12 shadow-xl"
+                        title="Quick Download (4K)"
                         onClick={() => handleDownload(imageUrl, `${wp.title}-${displayTheme}.png`)}
                       >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
+                        <Download className="w-5 h-5" />
                       </Button>
                     </div>
                   </div>
@@ -284,6 +304,17 @@ export default function WallpapersPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* MODAL PORTAL */}
+      {previewWallpaper && (
+        <WallpaperModal
+          isOpen={!!previewWallpaper}
+          onClose={() => setPreviewWallpaper(null)}
+          imageUrl={previewWallpaper.variants[previewTheme] || Object.values(previewWallpaper.variants)[0]}
+          title={previewWallpaper.title}
+          theme={previewTheme}
+        />
       )}
     </div>
   );
