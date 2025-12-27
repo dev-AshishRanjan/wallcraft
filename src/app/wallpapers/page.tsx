@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Download, Filter, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, Filter, Search, ChevronLeft, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,26 +16,60 @@ import { Input } from "@/components/ui/input";
 import { SkeletonCard } from "@/components/ui/skeleton-card";
 import { FadeInImage } from "@/components/ui/fade-in-image";
 
-// Import DB
-import db from "../../../public/database.json";
+// --- CONFIG ---
+// Replace with your actual username and repo name
+const REPO_USER = "dev-AshishRanjan";
+const REPO_NAME = "wallcraft";
+const DATA_URL = `https://cdn.jsdelivr.net/gh/${REPO_USER}/${REPO_NAME}@dev/public/database.json`;
 
 const ITEMS_PER_PAGE = 50;
 
+// Define the type manually since we don't have the import
+type WallpaperEntry = {
+  id: string;
+  title: string;
+  category: string;
+  photographer: string;
+  originalUrl: string;
+  date: string;
+  variants: Record<string, string>;
+};
+
 export default function WallpapersPage() {
   // --- STATE ---
+  const [db, setDb] = useState<WallpaperEntry[]>([]); // DB is now state
+  const [isDbLoading, setIsDbLoading] = useState(true);
+  const [dbError, setDbError] = useState(false);
+
+  // ... (Keep existing search/filter states) ...
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [themeFilter, setThemeFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isFiltering, setIsFiltering] = useState(false);
 
-  // Loading State
-  // We use 'isFiltering' to show the Skeletons
-  const [isFiltering, setIsFiltering] = useState(true);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // Add a timestamp to bypass cache if needed, or rely on CDN
+        const res = await fetch(`${DATA_URL}?t=${Date.now()}`);
+        if (!res.ok) throw new Error("Failed to load database");
+        const data = await res.json();
+        setDb(data);
+      } catch (error) {
+        console.error("DB Load Error:", error);
+        setDbError(true);
+      } finally {
+        setIsDbLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   // --- DERIVED DATA ---
-  const categories = ["All", ...Array.from(new Set(db.map((w) => w.category)))];
-  const themes = db.length > 0 ? ["All", ...Object.keys(db[0].variants)] : ["All"];
+  const categories = useMemo(() => ["All", ...Array.from(new Set(db.map((w) => w.category)))], [db]);
+  const themes = useMemo(() => db.length > 0 ? ["All", ...Object.keys(db[0].variants)] : ["All"], [db]);
 
   // --- DEBOUNCE SEARCH (0.5s delay) ---
   useEffect(() => {
@@ -67,7 +101,7 @@ export default function WallpapersPage() {
       const matchesCategory = categoryFilter === "All" || wallpaper.category === categoryFilter;
       return matchesSearch && matchesCategory;
     });
-  }, [debouncedSearch, categoryFilter]);
+  }, [debouncedSearch, categoryFilter, db]);
 
   // --- PAGINATION ---
   const totalPages = Math.ceil(filteredWallpapers.length / ITEMS_PER_PAGE);
@@ -91,6 +125,26 @@ export default function WallpapersPage() {
     link.click();
     document.body.removeChild(link);
   };
+
+  // --- RENDER UPDATES ---
+  // Handle the Initial DB Loading State specifically
+  if (isDbLoading) {
+    return (
+      <div className="min-h-screen bg-nord-0 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-10 h-10 text-nord-8 animate-spin" />
+        <p className="text-nord-4 animate-pulse">Connecting to WallCraft Network...</p>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="min-h-screen bg-nord-0 flex flex-col items-center justify-center gap-4 text-nord-11">
+        <AlertCircle className="w-10 h-10" />
+        <p>Failed to load wallpapers. Please check your internet connection.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-nord-0 text-nord-4 p-8 font-sans">

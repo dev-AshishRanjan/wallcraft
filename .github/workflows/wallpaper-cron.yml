@@ -8,8 +8,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   generate-and-release:
@@ -62,7 +60,7 @@ jobs:
           git config --global user.name 'WallCraft Bot'
           git config --global user.email 'bot@wallcraft.local'
           git add history.json public/database.json
-          git commit -m "chore: new wallpaper drop [skip ci]" || echo "No changes to commit"
+          git commit -m "chore: new wallpaper drop" || echo "No changes to commit"
           git push
       
       - name: Read Tag Name
@@ -82,39 +80,3 @@ jobs:
           files: output/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  deploy-frontend:
-    needs: generate-and-release
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Checkout (Latest)
-        uses: actions/checkout@v4
-        with:
-          ref: dev 
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Build Next.js
-        run: npm run build
-
-      # UPDATED: Use v3 here
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: out
-
-      # UPDATED: Use v4 here
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
