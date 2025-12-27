@@ -84,39 +84,35 @@ jobs:
   deploy-frontend:
     needs: generate-and-release
     runs-on: ubuntu-latest
-    name: Deploy Nextjs App
-    permissions:
-      contents: write
-      pages: write      # Required for GitHub Pages
-      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout
+      - name: Checkout (Latest)
         uses: actions/checkout@v4
-      
-      # 1. Pull the changes made by the previous job (history.json, database.json)
-      - name: Pull Latest Changes
-        run: git pull origin main
-      
+        with:
+          ref: dev 
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
 
       - name: Build Next.js
-        run: npm run build # This uses the freshly updated database.json
+        run: npm run build
 
+      # UPDATED: Use v3 here
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: out # Next.js 'export' output folder
+          path: out
 
+      # UPDATED: Use v4 here
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
