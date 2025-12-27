@@ -47,9 +47,8 @@ export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: Wall
       <DialogContent className="max-w-[95vw] h-[90vh] p-0 bg-nord-0 border-nord-2 flex flex-col md:flex-row overflow-hidden focus:outline-none">
 
         {/* LEFT: Image Preview Area */}
-        <div className="flex-1 bg-black/50 relative flex items-center justify-center p-4 overflow-hidden group">
-
-          {/* UPDATED: Uses FadeInImage for better UX */}
+        <div className="flex-1 relative flex items-center justify-center p-4 overflow-hidden group">
+          {/* Uses FadeInImage for better UX */}
           {/* We wrap it in a div that constrains the size so the image doesn't explode */}
           <div className="relative w-full h-full flex items-center justify-center">
             <FadeInImage
