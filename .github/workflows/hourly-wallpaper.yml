@@ -53,29 +53,68 @@ jobs:
           fi
 
       # 7. Commit the updated history.json back to repo
-      - name: Update History
+      - name: Commit DB & History
         run: |
           git config --global user.name 'HueForge Bot'
           git config --global user.email 'bot@hueforge.local'
-          git add history.json
-          git commit -m "chore: update wallpaper history [skip ci]" || echo "No history changes"
+          git add history.json public/database.json
+          git commit -m "chore: new wallpaper drop [skip ci]" || echo "No changes to commit"
           git push
-
-      # 8. Generate a Dynamic Tag Name (Time-based)
-      - name: Generate Tag
-        id: tagger
-        run: echo "tag_name=wallpapers-$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+      
+      - name: Read Tag Name
+        id: tag_reader
+        run: |
+          TAG=$(cat output/tag_name.txt)
+          echo "TAG_NAME=$TAG" >> $GITHUB_OUTPUT
 
       # 9. Upload to GitHub Releases (The Storage Layer)
       # This saves the images as binary assets attached to the release tag.
       - name: Create Release & Upload Assets
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.tagger.outputs.tag_name }}
-          name: ${{ steps.tagger.outputs.tag_name }}
+          tag_name: ${{ steps.tag_reader.outputs.TAG_NAME }}
+          name: ${{ steps.tag_reader.outputs.TAG_NAME }}
           body_path: output/release_body.md
-          files: output/* # Uploads all images and json files in output/
-          draft: false
-          prerelease: false
+          files: output/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-frontend:
+    needs: generate-and-release
+    runs-on: ubuntu-latest
+    name: Deploy Nextjs App
+    permissions:
+      contents: write
+      pages: write      # Required for GitHub Pages
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      # 1. Pull the changes made by the previous job (history.json, database.json)
+      - name: Pull Latest Changes
+        run: git pull origin main
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Next.js
+        run: npm run build # This uses the freshly updated database.json
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: out # Next.js 'export' output folder
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

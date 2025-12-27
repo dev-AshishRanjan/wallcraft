@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import dotenv from "dotenv";
 import { loadThemes, loadCategories, loadHistory, saveHistory, ensureDirectory, Theme } from './utils';
+import { updateDatabase } from './update-db';
 
 dotenv.config();
 
@@ -93,6 +94,14 @@ async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: s
     const categories = loadCategories();
     const history = loadHistory();
 
+    // We generate the tag HERE so we can write it to the DB correctly.
+    const date = new Date();
+    // Format: wallpapers-YYYYMMDD-HHMM
+    const tagName = `wallpapers-${date.toISOString().slice(0, 10).replace(/-/g, '')}-${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+
+    // Get Repo Name from ENV (provided by GitHub Actions) or fallback
+    const repoName = process.env.GITHUB_REPOSITORY || 'dev-AshishRanjan/wallcraft';
+
     // 2. Logic: Pick Random Category
     const category = categories[Math.floor(Math.random() * categories.length)];
     console.log(`🎯 Selected Category: ${category}`);
@@ -154,7 +163,11 @@ async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: s
 
     fs.writeFileSync(path.join(outputDir, 'meta.json'), JSON.stringify(metaData, null, 2));
 
-    // 6. Generate Release Description (Markdown)
+    // 6. Update the "Zero-API" Database
+    // This writes to public/database.json
+    updateDatabase(metaData, tagName, repoName);
+
+    // 7. Generate Release Description (Markdown)
     const releaseBody = `
 ## ${imageTitle}
 
@@ -168,6 +181,11 @@ ${themes.map(t => `- **${t.name}**`).join('\n')}
 > *Generated automatically by HueForge*
     `;
     fs.writeFileSync(path.join(outputDir, 'release_body.md'), releaseBody.trim());
+
+    // 9. IMPORTANT: Output the Tag Name for GitHub Actions
+    // The YAML needs to know which tag we decided on.
+    fs.writeFileSync(path.join(outputDir, 'tag_name.txt'), tagName);
+
 
     console.log('✅ Generation Complete.');
 
