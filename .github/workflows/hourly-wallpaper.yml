@@ -1,0 +1,72 @@
+name: Hourly Wallpaper Generator
+
+on:
+  schedule:
+    # Runs at minute 0 past every hour (Cron format)
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allows you to click "Run Now" manually for testing
+
+permissions:
+  contents: write # REQUIRED: Allows the action to create Releases
+
+jobs:
+  generate-and-release:
+    name: Process & Upload
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Checkout the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. Install dependencies
+      - name: Install Dependencies
+        run: npm ci
+
+      # 4. Create Output Directory (Ensures folder exists before script runs)
+      - name: Create Output Directory
+        run: mkdir -p output
+
+      # 5. Run the TypeScript Logic
+      # We pass the secret here. Make sure UNSPLASH_ACCESS_KEY is in Repo Settings > Secrets
+      - name: Generate Wallpapers
+        env:
+          UNSPLASH_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: npx ts-node scripts/process.ts
+
+      # 6. Generate Metadata for Frontend
+      # We save a JSON file detailing this run. The frontend will fetch this to show credits.
+      - name: Generate Release Metadata
+        run: |
+          # Create a simple JSON with timestamp. 
+          # ideally, your process.ts should write a 'meta.json' with Unsplash credits.
+          # If process.ts handles it, you can skip this 'echo'.
+          if [ ! -f output/meta.json ]; then
+            echo "{\"generated_at\": \"$(date -u)\", \"run_id\": \"${{ github.run_id }}\"}" > output/meta.json
+          fi
+
+      # 7. Generate a Dynamic Tag Name (Time-based)
+      - name: Generate Tag
+        id: tagger
+        run: echo "tag_name=wallpapers-$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+
+      # 8. Upload to GitHub Releases (The Storage Layer)
+      # This saves the images as binary assets attached to the release tag.
+      - name: Create Release & Upload Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tagger.outputs.tag_name }}
+          name: Wallpaper Collection ${{ steps.tagger.outputs.tag_name }}
+          body: "Automated wallpaper generation for ${{ steps.tagger.outputs.tag_name }}."
+          files: output/* # Uploads all images and json files in output/
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
