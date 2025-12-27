@@ -35,3 +35,26 @@ export function loadThemes(): Theme[] {
 
   return themes;
 }
+
+// Helper: Ensure directory exists (Fixes your local error)
+export function ensureDirectory(dirPath: string) {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+}
+
+export function loadCategories(): string[] {
+  const filePath = path.join(__dirname, '../categories.json');
+  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+}
+
+export function loadHistory(): string[] {
+  const filePath = path.join(__dirname, '../history.json');
+  if (!fs.existsSync(filePath)) return [];
+  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+}
+
+export function saveHistory(ids: string[]) {
+  const filePath = path.join(__dirname, '../history.json');
+  fs.writeFileSync(filePath, JSON.stringify(ids, null, 2));
+}

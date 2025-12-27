@@ -52,19 +52,28 @@ jobs:
             echo "{\"generated_at\": \"$(date -u)\", \"run_id\": \"${{ github.run_id }}\"}" > output/meta.json
           fi
 
-      # 7. Generate a Dynamic Tag Name (Time-based)
+      # 7. Commit the updated history.json back to repo
+      - name: Update History
+        run: |
+          git config --global user.name 'HueForge Bot'
+          git config --global user.email 'bot@hueforge.local'
+          git add history.json
+          git commit -m "chore: update wallpaper history [skip ci]" || echo "No history changes"
+          git push
+
+      # 8. Generate a Dynamic Tag Name (Time-based)
       - name: Generate Tag
         id: tagger
         run: echo "tag_name=wallpapers-$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
 
-      # 8. Upload to GitHub Releases (The Storage Layer)
+      # 9. Upload to GitHub Releases (The Storage Layer)
       # This saves the images as binary assets attached to the release tag.
       - name: Create Release & Upload Assets
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tagger.outputs.tag_name }}
-          name: Wallpaper Collection ${{ steps.tagger.outputs.tag_name }}
-          body: "Automated wallpaper generation for ${{ steps.tagger.outputs.tag_name }}."
+          name: ${{ steps.tagger.outputs.tag_name }}
+          body_path: output/release_body.md
           files: output/* # Uploads all images and json files in output/
           draft: false
           prerelease: false

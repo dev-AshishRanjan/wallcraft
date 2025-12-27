@@ -2,7 +2,11 @@ import sharp from 'sharp';
 import axios from 'axios';
 import path from 'path';
 import fs from 'fs';
-import { loadThemes, Theme } from './utils';
+import dotenv from "dotenv";
+import { loadThemes, loadCategories, loadHistory, saveHistory, ensureDirectory, Theme } from './utils';
+
+dotenv.config();
+
 
 // 1. Math: Euclidean Color Distance
 // Calculates which theme color is closest to the current pixel
@@ -26,7 +30,7 @@ function getNearestColor(pixel: number[], palette: number[][]): number[] {
 }
 
 // 2. Image Processor
-async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: string) {
+async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: string, originalId: string) {
   console.log(`🎨 Applying theme: ${theme.name}...`);
 
   // 1. Initialize Sharp
@@ -66,7 +70,7 @@ async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: s
   }
 
   // 5. Save the result
-  const fileName = `wallpaper-${theme.name.toLowerCase().replace(/\s+/g, '-')}.png`;
+  const fileName = `wallpaper-${theme.name.toLowerCase().replace(/\s+/g, '-')}-${originalId}.png`;
 
   await sharp(rawBuffer, {
     raw: {
@@ -82,42 +86,81 @@ async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: s
 // 3. Main Execution
 (async () => {
   try {
+    const outputDir = path.join(__dirname, '../output');
+    ensureDirectory(outputDir); // 1. Fix: Ensure folder exists
+
     const themes = loadThemes();
-    console.log(`Loaded ${themes.length} themes.`);
+    const categories = loadCategories();
+    const history = loadHistory();
 
-    // Fetch High-Res Image (Unsplash)
-    // Note: 'orientation=landscape' ensures desktop wallpaper format
-    const url = `https://api.unsplash.com/photos/random?orientation=landscape&query=minimalist,nature&client_id=${process.env.UNSPLASH_KEY}`;
-    const response = await axios.get(url);
-    const downloadUrl = response.data.urls.raw + '&q=85&w=3840'; // Force 4k
+    // 2. Logic: Pick Random Category
+    const category = categories[Math.floor(Math.random() * categories.length)];
+    console.log(`🎯 Selected Category: ${category}`);
 
+    // 3. Logic: Fetch Unique Image (Retry up to 3 times)
+    let imgData = null;
+    let attempts = 0;
+
+    while (attempts < 3) {
+      console.log(`📡 Fetching Unsplash image (Attempt ${attempts + 1})...`);
+      const url = `https://api.unsplash.com/photos/random?orientation=landscape&query=${category}&client_id=${process.env.UNSPLASH_KEY}`;
+      const res = await axios.get(url);
+
+      if (!history.includes(res.data.id)) {
+        imgData = res.data;
+        break;
+      }
+      console.warn(`⚠️ Duplicate image ID ${res.data.id} found. Retrying...`);
+      attempts++;
+    }
+
+    if (!imgData) throw new Error("Could not find a unique image after 3 attempts.");
+
+    // Download High-Res Buffer
+    const downloadUrl = imgData.urls.raw + '&q=85&w=3840';
+    const imgBuffer = (await axios({ url: downloadUrl, responseType: 'arraybuffer' })).data;
+
+    // Process Themes
+    for (const theme of themes) {
+      await applyThemeToImage(imgBuffer, theme, outputDir, imgData.id);
+    }
+
+    // 4. Update History
+    history.push(imgData.id);
+    saveHistory(history);
+
+    // 5. Generate Metadata for Frontend
     const metaData = {
-      original_url: downloadUrl, // The Unsplash URL
-      photographer: response.data.user.name,
-      photographer_url: response.data.user.links.html,
-      themes_generated: themes.map(t => t.name),
+      id: imgData.id,
+      category: category,
+      original_url: imgData.links.html,
+      photographer: imgData.user.name,
+      photographer_username: imgData.user.username,
+      themes: themes.map(t => t.name),
       created_at: new Date().toISOString()
     };
 
-    // Write this to output/meta.json so it gets uploaded to the Release
-    fs.writeFileSync(
-      path.join(__dirname, '../output/meta.json'),
-      JSON.stringify(metaData, null, 2)
-    );
+    fs.writeFileSync(path.join(outputDir, 'meta.json'), JSON.stringify(metaData, null, 2));
 
-    console.log(`⬇️ Downloading base image from Unsplash...`);
-    const imgBuffer = (await axios({ url: downloadUrl, responseType: 'arraybuffer' })).data;
+    // 6. Generate Release Description (Markdown)
+    const releaseBody = `
+## New Wallpaper Drop
 
-    // Process all themes in parallel? 
-    // No, sequential is safer for memory on free GitHub Runners (7GB RAM limit).
-    for (const theme of themes) {
-      await applyThemeToImage(imgBuffer, theme, path.join(__dirname, '../output'));
-    }
+- **Category:** ${category}
+- **Photographer:** [${imgData.user.name}](https://unsplash.com/@${imgData.user.username})
+- **Original Image:** [View on Unsplash](${imgData.links.html})
 
-    console.log('✅ All themes generated successfully.');
+### Available Themes
+${themes.map(t => `- **${t.name}**`).join('\n')}
+
+> *Generated automatically by HueForge*
+    `;
+    fs.writeFileSync(path.join(outputDir, 'release_body.md'), releaseBody.trim());
+
+    console.log('✅ Generation Complete.');
 
   } catch (error) {
-    console.error('❌ Error in generation process:', error);
+    console.error('❌ Error:', error);
     process.exit(1);
   }
 })();
