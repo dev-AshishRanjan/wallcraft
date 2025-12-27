@@ -29,33 +29,51 @@ function getNearestColor(pixel: number[], palette: number[][]): number[] {
 async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: string) {
   console.log(`🎨 Applying theme: ${theme.name}...`);
 
+  // 1. Initialize Sharp
   const image = sharp(imageBuffer);
+
+  // 2. Metadata is crucial for the output reconstruction
   const { width, height } = await image.metadata();
 
-  // Get raw pixel data
-  const rawBuffer = await image.raw().toBuffer();
-  const palette = theme.rgbPalette!; // We know this exists from loadThemes
+  // 3. FIX: Force the image to have an Alpha channel (RGBA)
+  // This ensures the buffer is always 4 channels, matching our loop logic.
+  const rawBuffer = await image
+    .ensureAlpha()
+    .raw()
+    .toBuffer();
 
-  // Process Pixels (Performance Critical Loop)
-  for (let i = 0; i < rawBuffer.length; i += 4) { // 4 channels: R, G, B, Alpha
-    // Skip transparent pixels
+  const palette = theme.rgbPalette!;
+
+  // 4. Process Pixels (R, G, B, A)
+  for (let i = 0; i < rawBuffer.length; i += 4) {
+    // i = Red, i+1 = Green, i+2 = Blue, i+3 = Alpha
+
+    // Skip fully transparent pixels (optimization)
     if (rawBuffer[i + 3] === 0) continue;
 
     const r = rawBuffer[i];
     const g = rawBuffer[i + 1];
     const b = rawBuffer[i + 2];
 
+    // Find nearest theme color
     const [newR, newG, newB] = getNearestColor([r, g, b], palette);
 
+    // Overwrite pixel
     rawBuffer[i] = newR;
     rawBuffer[i + 1] = newG;
     rawBuffer[i + 2] = newB;
+    // We leave Alpha (i+3) alone
   }
 
-  // Save the result
+  // 5. Save the result
   const fileName = `wallpaper-${theme.name.toLowerCase().replace(/\s+/g, '-')}.png`;
+
   await sharp(rawBuffer, {
-    raw: { width: width!, height: height!, channels: 4 }
+    raw: {
+      width: width!,
+      height: height!,
+      channels: 4 // This now matches because we used ensureAlpha()
+    }
   })
     .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toFile(path.join(outputDir, fileName));
