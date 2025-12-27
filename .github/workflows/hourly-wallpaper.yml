@@ -36,10 +36,12 @@ jobs:
 
       # 5. Run the TypeScript Logic
       # We pass the secret here. Make sure UNSPLASH_ACCESS_KEY is in Repo Settings > Secrets
-      - name: Generate Wallpapers
+      - name: Generate Wallpapers & Update DB
         env:
           UNSPLASH_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-        run: npx ts-node scripts/process.ts
+          # This ensures the script knows the correct repo for URL generation
+          GITHUB_REPOSITORY: ${{ github.repository }} 
+        run: npm run backend:generate
 
       # 6. Generate Metadata for Frontend
       # We save a JSON file detailing this run. The frontend will fetch this to show credits.
