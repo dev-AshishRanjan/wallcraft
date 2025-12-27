@@ -116,6 +116,17 @@ async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: s
 
     if (!imgData) throw new Error("Could not find a unique image after 3 attempts.");
 
+    // Get Title: Prefer 'description' (often null), fallback to 'alt_description', fallback to Category
+    let rawTitle = imgData.description || imgData.alt_description || `${category} Wallpaper`;
+
+    // Formatting: Capitalize first letter, truncate if too long (max 50 chars)
+    rawTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
+    if (rawTitle.length > 50) rawTitle = rawTitle.substring(0, 47) + '...';
+
+    // Clean for Filenames/Tags (Optional, mostly for display)
+    const imageTitle = rawTitle.replace(/\n/g, ' ').trim();
+    console.log(`🖼️ Image Title: "${imageTitle}"`);
+
     // Download High-Res Buffer
     const downloadUrl = imgData.urls.raw + '&q=85&w=3840';
     const imgBuffer = (await axios({ url: downloadUrl, responseType: 'arraybuffer' })).data;
@@ -132,6 +143,7 @@ async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: s
     // 5. Generate Metadata for Frontend
     const metaData = {
       id: imgData.id,
+      title: imageTitle,
       category: category,
       original_url: imgData.links.html,
       photographer: imgData.user.name,
@@ -144,7 +156,7 @@ async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: s
 
     // 6. Generate Release Description (Markdown)
     const releaseBody = `
-## New Wallpaper Drop
+## ${imageTitle}
 
 - **Category:** ${category}
 - **Photographer:** [${imgData.user.name}](https://unsplash.com/@${imgData.user.username})
