@@ -103,7 +103,7 @@ async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: s
 
     while (attempts < 3) {
       console.log(`📡 Fetching Unsplash image (Attempt ${attempts + 1})...`);
-      const url = `https://api.unsplash.com/photos/random?orientation=landscape&query=${category}&client_id=${process.env.UNSPLASH_KEY}`;
+      const url = `https://api.unsplash.com/photos/random?orientation=landscape&query=Minimalist,${category}&client_id=${process.env.UNSPLASH_KEY}`;
       const res = await axios.get(url);
 
       if (!history.includes(res.data.id)) {
