@@ -16,7 +16,7 @@ export function Footer() {
         <div className="flex items-center gap-6 text-sm text-nord-4/60">
           <Link href="/wallpapers" className="hover:text-nord-8 transition-colors">Gallery</Link>
           <Link href="/studio" className="hover:text-nord-8 transition-colors">Studio</Link>
-          <Link href="https://github.com/your-username/wallcraft" className="hover:text-nord-8 transition-colors">GitHub</Link>
+          <Link href="https://github.com/dev-AshishRanjan/wallcraft" className="hover:text-nord-8 transition-colors">GitHub</Link>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-nord-4/40">

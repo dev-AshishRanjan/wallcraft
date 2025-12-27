@@ -74,7 +74,7 @@ export default async function HomePage() {
                 Explore Gallery <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-            <Link href="https://github.com/your-username/wallcraft" target="_blank">
+            <Link href="https://github.com/dev-AshishRanjan/wallcraft" target="_blank">
               <Button variant="outline" size="lg" className="border-nord-3 text-nord-4 hover:bg-nord-1 h-12 px-8 text-base">
                 <Github className="w-4 h-4 mr-2" /> Star on GitHub
               </Button>
