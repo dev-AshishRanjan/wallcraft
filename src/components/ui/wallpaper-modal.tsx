@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { X, Download, Monitor, Check, Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { X, Download, Monitor, Loader2 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { processImage, QUALITIES, RESOLUTIONS } from "@/lib/image-processor";
 import { cn } from "@/lib/utils";
+// Import the FadeInImage component
+import { FadeInImage } from "@/components/ui/fade-in-image";
 
 interface WallpaperModalProps {
   isOpen: boolean;
@@ -24,22 +26,17 @@ export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: Wall
   const handleDownload = async () => {
     setIsProcessing(true);
     try {
-      // Process image in browser
       const blobUrl = await processImage(imageUrl, selectedQuality, selectedRatio);
-
-      // Trigger Download
       const link = document.createElement("a");
       link.href = blobUrl;
       link.download = `${title}-${theme}-${selectedQuality}-${selectedRatio}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Cleanup
       URL.revokeObjectURL(blobUrl);
     } catch (e) {
       console.error("Download failed", e);
-      alert("Failed to process image. Try a different browser.");
+      alert("Failed to download. The image might be restricted.");
     } finally {
       setIsProcessing(false);
     }
@@ -47,20 +44,26 @@ export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: Wall
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[95vw] h-[90vh] p-0 bg-nord-0 border-nord-2 flex flex-col md:flex-row overflow-hidden">
+      <DialogContent className="max-w-[95vw] h-[90vh] p-0 bg-nord-0 border-nord-2 flex flex-col md:flex-row overflow-hidden focus:outline-none">
 
         {/* LEFT: Image Preview Area */}
         <div className="flex-1 bg-black/50 relative flex items-center justify-center p-4 overflow-hidden group">
-          <img
-            src={imageUrl}
-            alt={title}
-            className="max-h-full max-w-full object-contain shadow-2xl shadow-black/50"
-          />
 
-          {/* Close Btn (Mobile friendly overlay) */}
+          {/* UPDATED: Uses FadeInImage for better UX */}
+          {/* We wrap it in a div that constrains the size so the image doesn't explode */}
+          <div className="relative w-full h-full flex items-center justify-center">
+            <FadeInImage
+              src={imageUrl}
+              alt={title}
+              // 'object-contain' ensures we see the whole wallpaper without cropping in preview
+              className="max-h-full max-w-full object-contain shadow-2xl shadow-black/50"
+            />
+          </div>
+
+          {/* Close Btn (Mobile) */}
           <Button
             variant="ghost"
-            className="absolute top-4 right-4 text-white bg-black/20 hover:bg-black/40 rounded-full p-2 md:hidden"
+            className="absolute top-4 right-4 text-white bg-black/20 hover:bg-black/40 rounded-full p-2 md:hidden z-50"
             onClick={onClose}
           >
             <X className="w-5 h-5" />
@@ -68,7 +71,7 @@ export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: Wall
         </div>
 
         {/* RIGHT: Controls Sidebar */}
-        <div className="w-full md:w-80 bg-nord-1 border-l border-nord-2 p-6 flex flex-col gap-6 shrink-0 z-50">
+        <div className="w-full md:w-80 bg-nord-1 border-l border-nord-2 p-6 flex flex-col gap-6 shrink-0 z-50 overflow-y-auto">
 
           {/* Header */}
           <div className="flex justify-between items-start">
@@ -86,7 +89,6 @@ export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: Wall
           {/* Download Options */}
           <div className="space-y-6 flex-1">
 
-            {/* Resolution/Quality */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-nord-4 flex items-center gap-2">
                 <Monitor className="w-4 h-4 text-nord-8" /> Quality
@@ -109,7 +111,6 @@ export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: Wall
               </div>
             </div>
 
-            {/* Aspect Ratio */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-nord-4">Aspect Ratio</label>
               <Select
@@ -129,7 +130,6 @@ export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: Wall
 
           </div>
 
-          {/* Action Button */}
           <Button
             size="lg"
             className="w-full bg-nord-8 text-nord-0 font-bold hover:bg-nord-9 h-12 text-base shadow-lg shadow-nord-8/20"
