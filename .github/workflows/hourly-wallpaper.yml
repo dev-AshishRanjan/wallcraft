@@ -59,8 +59,8 @@ jobs:
       # 7. Commit the updated history.json back to repo
       - name: Commit DB & History
         run: |
-          git config --global user.name 'HueForge Bot'
-          git config --global user.email 'bot@hueforge.local'
+          git config --global user.name 'WallCraft Bot'
+          git config --global user.email 'bot@wallcraft.local'
           git add history.json public/database.json
           git commit -m "chore: new wallpaper drop [skip ci]" || echo "No changes to commit"
           git push

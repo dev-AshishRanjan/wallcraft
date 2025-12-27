@@ -178,7 +178,7 @@ async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: s
 ### Available Themes
 ${themes.map(t => `- **${t.name}**`).join('\n')}
 
-> *Generated automatically by HueForge*
+> *Generated automatically by WallCraft*
     `;
     fs.writeFileSync(path.join(outputDir, 'release_body.md'), releaseBody.trim());
 
