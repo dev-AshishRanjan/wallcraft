@@ -1,15 +1,18 @@
 {
-  "name": "Monokai Pro",
+  "name": "Monokai Pro Spectrum",
   "colors": [
+    "#1f1e1f",
     "#2d2a2e",
     "#403e41",
     "#5b595c",
     "#727072",
+    "#939293",
     "#a9dc76",
     "#78dce8",
+    "#ab9df2",
     "#ffd866",
     "#fc9867",
     "#ff6188",
-    "#ab9df2"
+    "#c1c0c0"
   ]
 }

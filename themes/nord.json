@@ -1,15 +1,20 @@
 {
-  "name": "Nord",
+  "name": "Nord Atmospheric",
   "colors": [
+    "#1f2430",
+    "#242933",
     "#2e3440",
     "#3b4252",
     "#434c5e",
     "#4c566a",
-    "#8fbcbb",
+    "#60728a",
     "#88c0d0",
+    "#8fbcbb",
     "#81a1c1",
     "#5e81ac",
     "#a3be8c",
-    "#ebcb8b"
+    "#ebcb8b",
+    "#d08770",
+    "#bf616a"
   ]
 }

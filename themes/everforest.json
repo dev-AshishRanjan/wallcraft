@@ -1,14 +1,18 @@
 {
-  "name": "Everforest Dark",
+  "name": "Everforest Deep",
   "colors": [
+    "#232a2e",
     "#2b3339",
     "#323c41",
     "#3a464c",
-    "#4f5b58",
+    "#4a555b",
+    "#5c6a72",
+    "#7a8478",
     "#a7c080",
-    "#7fbbb3",
     "#83c092",
+    "#7fbbb3",
     "#dbbc7f",
+    "#e69875",
     "#e67e80",
     "#d699b6"
   ]

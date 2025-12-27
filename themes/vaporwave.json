@@ -1,15 +1,17 @@
 {
-  "name": "Vaporwave",
+  "name": "Vaporwave Neon Soft",
   "colors": [
-    "#1a1a2e",
-    "#16213e",
+    "#120f2a",
+    "#1a1a3a",
+    "#24243e",
     "#533483",
-    "#e94560",
-    "#ff6ec7",
+    "#6a4c93",
+    "#8a5cf6",
     "#b967ff",
-    "#72ddf7",
-    "#f7f7ff",
+    "#ff6ec7",
     "#ffd6e8",
-    "#8affc1"
+    "#72ddf7",
+    "#8affc1",
+    "#f7f7ff"
   ]
 }

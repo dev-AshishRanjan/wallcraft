@@ -1,15 +1,17 @@
 {
-  "name": "Sonokai",
+  "name": "Sonokai Andromeda",
   "colors": [
+    "#181a1c",
     "#2c2e34",
     "#3b3e48",
     "#4d5160",
+    "#6c6f85",
     "#7f8490",
     "#9ed072",
     "#76cce0",
+    "#b39df3",
     "#e7c664",
     "#f39660",
-    "#fc5d7c",
-    "#b39df3"
+    "#fc5d7c"
   ]
 }

@@ -1,13 +1,17 @@
 {
-  "name": "Tokyo Night",
+  "name": "Tokyo Night Storm",
   "colors": [
+    "#16161e",
     "#1a1b26",
-    "#24283b",
+    "#222436",
+    "#2f334d",
     "#414868",
     "#565f89",
+    "#6b6f8e",
     "#7aa2f7",
     "#7dcfff",
     "#9ece6a",
+    "#c3e88d",
     "#e0af68",
     "#f7768e",
     "#bb9af7"
