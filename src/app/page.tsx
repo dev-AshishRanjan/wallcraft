@@ -1,37 +1,31 @@
 import Link from "next/link";
 import fs from "fs";
 import path from "path";
-import { ArrowRight, Zap, Layers, Palette, Github, Clock, Tag } from "lucide-react";
+import { ArrowRight, Zap, Layers, Palette, Github, Clock, Tag, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 // --- SERVER SIDE LOGIC ---
-// This runs at build time to fetch your actual data
 async function getAppStats() {
   const themeDir = path.join(process.cwd(), "themes");
   const categoryFile = path.join(process.cwd(), "categories.json");
 
-  // 1. Get Themes
   let themeNames: string[] = [];
   try {
     const files = fs.readdirSync(themeDir).filter((file) => file.endsWith(".json"));
-    // Read each file to get the "name" field, or just use filename
     themeNames = files.map((file) => {
       const content = fs.readFileSync(path.join(themeDir, file), "utf-8");
       return JSON.parse(content).name;
     });
   } catch (e) {
-    console.warn("Could not load themes", e);
-    themeNames = ["Nord", "Dracula"]; // Fallback
+    themeNames = ["Nord", "Dracula"];
   }
 
-  // 2. Get Categories
   let categories: string[] = [];
   try {
     const content = fs.readFileSync(categoryFile, "utf-8");
     categories = JSON.parse(content);
   } catch (e) {
-    console.warn("Could not load categories", e);
     categories = ["General"];
   }
 
@@ -39,7 +33,6 @@ async function getAppStats() {
 }
 
 export default async function HomePage() {
-  // Fetch data
   const { themeNames, categories } = await getAppStats();
 
   return (
@@ -47,7 +40,6 @@ export default async function HomePage() {
 
       {/* 1. HERO SECTION */}
       <section className="relative py-20 md:py-32 overflow-hidden">
-        {/* Background Blob */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-nord-8/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
         <div className="container mx-auto px-4 text-center max-w-4xl">
@@ -74,7 +66,7 @@ export default async function HomePage() {
                 Explore Gallery <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-            <Link href="https://github.com/dev-AshishRanjan/wallcraft" target="_blank">
+            <Link href="https://github.com/your-username/wallcraft" target="_blank">
               <Button variant="outline" size="lg" className="border-nord-3 text-nord-4 hover:bg-nord-1 h-12 px-8 text-base">
                 <Github className="w-4 h-4 mr-2" /> Star on GitHub
               </Button>
@@ -93,7 +85,9 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Grid Layout: 2x2 on Desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+
             {/* Feature 1: Themes */}
             <div className="p-8 bg-nord-0 border border-nord-2 rounded-2xl hover:border-nord-8 transition-colors group">
               <div className="mb-6 p-4 bg-nord-1 rounded-xl inline-block group-hover:scale-110 transition-transform">
@@ -104,18 +98,34 @@ export default async function HomePage() {
                 We strictly follow the color palettes you love.
               </p>
               <div className="flex flex-wrap gap-2">
-                {themeNames.slice(0, 6).map(name => (
+                {themeNames.slice(0, 5).map(name => (
                   <Badge key={name} variant="secondary" className="bg-nord-1 text-nord-4 text-[10px] border-nord-2">
                     {name}
                   </Badge>
                 ))}
-                {themeNames.length > 6 && (
-                  <span className="text-xs text-nord-4/40 self-center">+{themeNames.length - 6} more</span>
+                {themeNames.length > 5 && (
+                  <span className="text-xs text-nord-4/40 self-center">+{themeNames.length - 5} more</span>
                 )}
               </div>
             </div>
 
-            {/* Feature 2: Categories */}
+            {/* Feature 2: Studio */}
+            <div className="p-8 bg-nord-0 border border-nord-2 rounded-2xl hover:border-nord-8 transition-colors group">
+              <div className="mb-6 p-4 bg-nord-1 rounded-xl inline-block group-hover:scale-110 transition-transform">
+                <Wand2 className="w-8 h-8 text-nord-15" />
+              </div>
+              <h3 className="text-xl font-bold text-nord-6 mb-3">WallCraft Studio</h3>
+              <p className="text-nord-4/60 leading-relaxed mb-4">
+                Have a specific image? Drag & drop it into our Studio to apply themes instantly in your browser.
+              </p>
+              <Link href="/studio">
+                <span className="text-nord-8 text-sm font-bold hover:underline inline-flex items-center">
+                  Try Studio <ArrowRight className="w-3 h-3 ml-1" />
+                </span>
+              </Link>
+            </div>
+
+            {/* Feature 3: Categories */}
             <div className="p-8 bg-nord-0 border border-nord-2 rounded-2xl hover:border-nord-8 transition-colors group">
               <div className="mb-6 p-4 bg-nord-1 rounded-xl inline-block group-hover:scale-110 transition-transform">
                 <Tag className="w-8 h-8 text-nord-13" />
@@ -125,22 +135,25 @@ export default async function HomePage() {
                 From nature to cyberpunk, we cover it all.
               </p>
               <div className="flex flex-wrap gap-2">
-                {categories.slice(0, 6).map(cat => (
+                {categories.slice(0, 5).map(cat => (
                   <Badge key={cat} variant="secondary" className="bg-nord-1 text-nord-4 text-[10px] border-nord-2">
                     {cat}
                   </Badge>
                 ))}
+                {categories.length > 5 && (
+                  <span className="text-xs text-nord-4/40 self-center">+{categories.length - 5} more</span>
+                )}
               </div>
             </div>
 
-            {/* Feature 3: Quality */}
+            {/* Feature 4: Quality */}
             <div className="p-8 bg-nord-0 border border-nord-2 rounded-2xl hover:border-nord-8 transition-colors group">
               <div className="mb-6 p-4 bg-nord-1 rounded-xl inline-block group-hover:scale-110 transition-transform">
                 <Layers className="w-8 h-8 text-nord-9" />
               </div>
               <h3 className="text-xl font-bold text-nord-6 mb-3">4K Quality</h3>
               <p className="text-nord-4/60 leading-relaxed">
-                We strictly process high-resolution images, ensuring they look crisp on any monitor, from 1080p to 4K Ultrawide.
+                We strictly process high-resolution images (3840px width), ensuring they look crisp on any monitor, from 1080p to 4K Ultrawide.
               </p>
             </div>
 
@@ -152,9 +165,7 @@ export default async function HomePage() {
       <section className="py-24">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto bg-gradient-to-b from-nord-1 to-nord-0 border border-nord-2 p-12 rounded-3xl relative overflow-hidden">
-            {/* Decoration */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-nord-8/5 blur-[80px] -z-10 pointer-events-none" />
-
             <Clock className="w-12 h-12 text-nord-4/30 mx-auto mb-6" />
 
             <h2 className="text-3xl font-bold text-nord-6 mb-4">
