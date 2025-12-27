@@ -7,7 +7,9 @@ on:
   workflow_dispatch: # Allows you to click "Run Now" manually for testing
 
 permissions:
-  contents: write # REQUIRED: Allows the action to create Releases
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   generate-and-release:
