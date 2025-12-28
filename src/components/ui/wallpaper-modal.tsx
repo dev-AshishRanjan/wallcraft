@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { X, Download, Monitor, Loader2 } from "lucide-react";
+import {
+  X, Download, Monitor, Loader2, User,
+  Calendar, Tag, Palette, ExternalLink,
+  Image as ImageIcon, Layers
+} from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select";
 import { processImage, QUALITIES, RESOLUTIONS } from "@/lib/image-processor";
 import { cn } from "@/lib/utils";
-// Import the FadeInImage component
 import { FadeInImage } from "@/components/ui/fade-in-image";
 
 interface WallpaperModalProps {
@@ -16,9 +22,17 @@ interface WallpaperModalProps {
   imageUrl: string;
   title: string;
   theme: string;
+  category: string;
+  photographer: string;
+  originalUrl: string;
+  date: string;
 }
 
-export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: WallpaperModalProps) {
+export function WallpaperModal({
+  isOpen, onClose, imageUrl, title, theme,
+  category, photographer, originalUrl, date
+}: WallpaperModalProps) {
+
   const [selectedQuality, setSelectedQuality] = useState<keyof typeof QUALITIES>("4K");
   const [selectedRatio, setSelectedRatio] = useState<keyof typeof RESOLUTIONS>("Original");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -29,14 +43,14 @@ export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: Wall
       const blobUrl = await processImage(imageUrl, selectedQuality, selectedRatio);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `${title}-${theme}-${selectedQuality}-${selectedRatio}.png`;
+      link.download = `${title.replace(/\s+/g, '-').toLowerCase()}-${theme}-${selectedQuality}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch (e) {
       console.error("Download failed", e);
-      alert("Failed to download. The image might be restricted.");
+      alert("Failed to download. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -44,102 +58,163 @@ export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: Wall
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[95vw] h-[90vh] p-0 bg-nord-0 border-nord-2 flex flex-col md:flex-row overflow-hidden focus:outline-none">
+      <DialogContent className="max-w-[95vw] h-[90dvh] p-0 gap-0 bg-background border-border flex flex-col md:flex-row overflow-hidden focus:outline-none rounded-sm">
 
         {/* LEFT: Image Preview Area */}
-        <div className="flex-1 relative flex items-center justify-center p-4 overflow-hidden group">
-          {/* Uses FadeInImage for better UX */}
-          {/* We wrap it in a div that constrains the size so the image doesn't explode */}
+        <div className="flex-1 relative flex items-center justify-center p-4 md:p-8 bg-muted/20 overflow-hidden group z-50">
           <div className="relative w-full h-full flex items-center justify-center">
             <FadeInImage
               src={imageUrl}
               alt={title}
-              // 'object-contain' ensures we see the whole wallpaper without cropping in preview
-              className="max-h-full max-w-full object-contain sm:object-cover shadow-2xl shadow-black/50 rounded-md"
+              className="max-h-full max-w-full object-cover shadow-2xl shadow-black/50 rounded-md"
+              priority={true}
             />
           </div>
         </div>
 
         {/* RIGHT: Controls Sidebar */}
-        <div className="w-full md:w-80 bg-nord-1 border-l border-nord-2 p-6 flex flex-col gap-6 shrink-0 z-50 overflow-y-auto">
+        <div className="w-full md:w-[400px] bg-card border-l border-border flex flex-col shrink-0 z-50 h-[60dvh] md:h-full">
 
           {/* Header */}
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-bold text-nord-6 line-clamp-2">{title}</h2>
-              <span className="text-sm text-nord-4/60 mt-1 block">Theme: {theme}</span>
+          <div className="p-6 pb-2 flex justify-between items-start shrink-0">
+            <div className="space-y-1 pr-4">
+              <h2 className="text-xl font-bold tracking-tight text-card-foreground line-clamp-2 leading-tight">
+                {title}
+              </h2>
+              {/* Removed Category Badge here as requested */}
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose} className="text-nord-4 hover:text-nord-8 -mt-2 -mr-2 hidden md:flex">
+            <Button variant="ghost" size="icon" onClick={onClose} className="text-muted-foreground hover:text-foreground shrink-0 -mt-1 -mr-2">
               <X className="w-5 h-5" />
             </Button>
           </div>
 
-          <hr className="border-nord-2" />
+          {/* Scrollable Content */}
+          <ScrollArea className="flex-1 px-6">
+            <div className="space-y-6 py-4">
 
-          {/* Download Options */}
-          <div className="space-y-6 flex-1">
-
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-nord-4 flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-nord-8" /> Quality
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(QUALITIES).map(([key, val]) => (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedQuality(key as any)}
-                    className={cn(
-                      "text-xs p-2 rounded-md border transition-all text-left",
-                      selectedQuality === key
-                        ? "bg-nord-8/10 border-nord-8 text-nord-8 font-bold"
-                        : "bg-nord-2 border-transparent text-nord-4 hover:bg-nord-3"
-                    )}
-                  >
-                    {val.label}
-                  </button>
-                ))}
+              {/* 1. METADATA BANNER (Refined UI) */}
+              {/* Using same style as Attribution: bg-background + border + shadow-sm */}
+              <div className="grid grid-cols-2 gap-4 p-4 rounded-xl border border-border bg-background shadow-sm">
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5">
+                    <Palette className="w-3 h-3" /> Theme
+                  </span>
+                  <p className="text-sm font-medium truncate" title={theme}>{theme}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5">
+                    <Tag className="w-3 h-3" /> Category
+                  </span>
+                  <p className="text-sm font-medium truncate" title={category}>{category}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3" /> Created
+                  </span>
+                  <p className="text-sm font-medium">{new Date(date).toLocaleDateString()}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5">
+                    <Layers className="w-3 h-3" /> Resolution
+                  </span>
+                  <p className="text-sm font-medium">4K Ultra HD</p>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-nord-4">Aspect Ratio</label>
-              <Select
-                value={selectedRatio}
-                onValueChange={(v: any) => setSelectedRatio(v)}
-              >
-                <SelectTrigger className="bg-nord-2 border-none text-nord-4">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-nord-2 border-nord-3 text-nord-4">
-                  {Object.keys(RESOLUTIONS).map(r => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              {/* 2. CONFIGURATION */}
+              <div className="space-y-5">
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-primary" /> Quality Preset
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(QUALITIES).map(([key, val]) => (
+                      <button
+                        key={key}
+                        onClick={() => setSelectedQuality(key as any)}
+                        // UPDATED: Simple layout, 2nd line removed
+                        className={cn(
+                          "flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm transition-all",
+                          selectedQuality === key
+                            ? "bg-primary/10 border-primary text-primary shadow-sm"
+                            : "bg-background border-border text-foreground hover:bg-muted"
+                        )}
+                      >
+                        <span className="font-bold">{key}</span>
+                        {/* UPDATED: Muted comment style */}
+                        <span className={cn(
+                          "text-[10px] uppercase tracking-wider font-medium",
+                          selectedQuality === key ? "text-primary/70" : "text-muted-foreground"
+                        )}>
+                          {val.label.replace(key, '').replace('Quality', '').trim() || 'STD'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-primary" /> Crop Ratio
+                  </label>
+                  <Select value={selectedRatio} onValueChange={(v: any) => setSelectedRatio(v)}>
+                    {/* UPDATED: No Focus Border */}
+                    <SelectTrigger className="w-full bg-background border-input focus:ring-0 focus:ring-offset-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(RESOLUTIONS).map(r => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* 3. ATTRIBUTION BANNER */}
+              <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-background shadow-sm">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <User className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-xs text-muted-foreground font-medium mb-0.5">Shot by</p>
+                    <p className="text-sm font-bold truncate text-foreground">{photographer}</p>
+                  </div>
+                </div>
+                <a
+                  href={originalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-primary"
+                  title="View Original on Unsplash"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
+
+            </div>
+          </ScrollArea>
+
+          {/* Footer Actions */}
+          <div className="p-2 pt-4 mt-auto border-t bg-card">
+            <Button
+              size="lg"
+              className="w-full font-bold shadow-lg"
+              onClick={handleDownload}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Preparing...</>
+              ) : (
+                <><Download className="w-5 h-5 mr-2" /> Download Wallpaper</>
+              )}
+            </Button>
+            <p className="text-[10px] text-muted-foreground text-center mt-3">
+              Processed securely on your device.
+            </p>
           </div>
 
-          <Button
-            size="lg"
-            className="w-full bg-nord-8 text-nord-0 font-bold hover:bg-nord-9 h-12 text-base shadow-lg shadow-nord-8/20"
-            onClick={handleDownload}
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processing...
-              </>
-            ) : (
-              <>
-                <Download className="w-5 h-5 mr-2" /> Download
-              </>
-            )}
-          </Button>
-
-          <p className="text-xs text-nord-4/40 text-center">
-            Processed securely in your browser.
-          </p>
         </div>
 
       </DialogContent>

@@ -46,7 +46,7 @@ export function FadeInImage({ src, alt, className, priority = false, ...props }:
   }, [src]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden">
+    <div ref={containerRef} className="relative w-full h-full">
 
       {/* 1. Loader (Spinner) */}
       {!isLoaded && !hasError && (

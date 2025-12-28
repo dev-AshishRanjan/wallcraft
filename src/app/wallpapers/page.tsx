@@ -414,9 +414,14 @@ function WallpapersContent() {
         <WallpaperModal
           isOpen={!!previewWallpaper}
           onClose={() => setPreviewWallpaper(null)}
-          imageUrl={previewWallpaper.variants[previewTheme]}
+          imageUrl={previewWallpaper.variants[previewTheme] || Object.values(previewWallpaper.variants)[0]}
           title={previewWallpaper.title}
           theme={previewTheme}
+          // ADD THESE LINES:
+          category={previewWallpaper.category}
+          photographer={previewWallpaper.photographer}
+          originalUrl={previewWallpaper.originalUrl}
+          date={previewWallpaper.date}
         />
       )}
     </div>
