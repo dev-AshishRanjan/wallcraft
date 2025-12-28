@@ -17,87 +17,88 @@ export function Footer() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Avoid hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
 
   return (
-    <footer className="border-t bg-card/50 backdrop-blur-sm mt-auto">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-
-          {/* Brand Column */}
-          <div className="md:col-span-1 space-y-4">
+    <footer className="w-full border-t bg-card/30 backdrop-blur-sm mt-auto">
+      {/* Tighter vertical padding (py-8) for a denser production feel */}
+      <div className="container mx-auto px-4 py-8 md:py-10">
+        
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          
+          {/* 1. Brand & Description */}
+          <div className="space-y-3">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="font-bold text-primary-foreground text-lg">W</span>
+              <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
+                <span className="font-bold text-primary-foreground text-base">W</span>
               </div>
-              <span className="font-bold text-xl tracking-tight">WallCraft</span>
+              <span className="font-bold text-lg tracking-tight">WallCraft</span>
             </Link>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Open-source automated wallpaper engine for developers. High-quality, themed, and free forever.
+            <p className="text-muted-foreground text-sm leading-snug max-w-xs">
+              The automated, open-source wallpaper engine for developers.
             </p>
           </div>
 
-          {/* Product Links */}
+          {/* 2. Product Links - Tighter spacing (space-y-2) */}
           <div>
-            <h3 className="font-semibold mb-4">Product</h3>
-            <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><Link href="/wallpapers" className="hover:text-primary transition-colors">Wallpaper Gallery</Link></li>
-              <li><Link href="/studio" className="hover:text-primary transition-colors">WallCraft Studio</Link></li>
-              <li><Link href="https://github.com/dev-AshishRanjan/wallcraft/releases" className="hover:text-primary transition-colors">Releases</Link></li>
+            <h3 className="font-semibold mb-3 text-sm text-foreground">Product</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link href="/wallpapers" className="hover:text-primary transition-colors">Gallery</Link></li>
+              <li><Link href="/studio" className="hover:text-primary transition-colors">Studio</Link></li>
+              <li><Link href="https://github.com/your-username/wallcraft/releases" className="hover:text-primary transition-colors">Releases</Link></li>
             </ul>
           </div>
 
-          {/* Legal Links */}
+          {/* 3. Legal Links */}
           <div>
-            <h3 className="font-semibold mb-4">Legal</h3>
-            <ul className="space-y-3 text-sm text-muted-foreground">
+            <h3 className="font-semibold mb-3 text-sm text-foreground">Legal</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
               <li><Link href="https://unsplash.com/license" className="hover:text-primary transition-colors">Image License</Link></li>
             </ul>
           </div>
 
-          {/* Social Links */}
+          {/* 4. Social & Connect */}
           <div>
-            <h3 className="font-semibold mb-4">Connect</h3>
+            <h3 className="font-semibold mb-3 text-sm text-foreground">Connect</h3>
             <div className="flex items-center gap-2">
-              <Link href="https://github.com/dev-AshishRanjan/wallcraft" target="_blank">
-                <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-background hover:bg-accent hover:text-accent-foreground">
+              <Link href="https://github.com/your-username/wallcraft" target="_blank">
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full bg-background hover:bg-accent hover:text-accent-foreground border-border/60">
                   <Github className="w-4 h-4" />
                   <span className="sr-only">GitHub</span>
                 </Button>
               </Link>
-              {/* Placeholders for future socials */}
-              <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-background hover:bg-accent hover:text-accent-foreground" disabled>
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full bg-background border-border/60 opacity-50 cursor-not-allowed">
                 <Twitter className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-background hover:bg-accent hover:text-accent-foreground" disabled>
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full bg-background border-border/60 opacity-50 cursor-not-allowed">
                 <Globe className="w-4 h-4" />
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
-
+        {/* Bottom Bar - Reduced top margin (mt-8) and padding (pt-6) */}
+        <div className="mt-8 pt-6 border-t border-border/40 flex flex-col md:flex-row justify-between items-center gap-4">
+          
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>© {new Date().getFullYear()} WallCraft. Built with</span>
             <Heart className="w-3 h-3 text-destructive fill-current" />
             <span>by Open Source.</span>
           </div>
 
-          {/* Theme Selector */}
+          {/* Theme Selector - Slightly more compact */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground">Theme:</span>
-            {mounted && (
+            <span className="text-[10px] uppercase font-bold text-muted-foreground hidden sm:inline-block">Theme</span>
+            {mounted ? (
               <Select value={theme} onValueChange={setTheme}>
-                <SelectTrigger className="w-[130px] h-8 text-xs bg-background border-input">
-                  <Palette className="w-3 h-3 mr-2 text-primary" />
-                  <SelectValue placeholder="Theme" />
+                <SelectTrigger className="w-[120px] h-7 text-xs bg-background border-input/60 focus:ring-0">
+                  <Palette className="w-3 h-3 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Select theme" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="nord">Nord</SelectItem>
@@ -106,6 +107,8 @@ export function Footer() {
                   <SelectItem value="latte">Latte</SelectItem>
                 </SelectContent>
               </Select>
+            ) : (
+              <div className="w-[120px] h-7 bg-muted/20 rounded animate-pulse" />
             )}
           </div>
         </div>
