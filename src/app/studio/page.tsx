@@ -21,10 +21,11 @@ async function getThemes(): Promise<Theme[]> {
 export default async function StudioPage() {
   const themes = await getThemes();
 
-  // FIX: Added -mt-16 to pull the studio workspace up, removing the gap caused by global layout.
-  // We use h-screen to ensure it takes the full viewport.
+  // FIX: 
+  // 1. Removed -mt-16 and pt-16 (The RootLayout handles the navbar offset).
+  // 2. set height to calc(100vh - 4rem) so it perfectly fills the remaining screen space.
   return (
-    <div className="-mt-16 h-screen overflow-hidden pt-16 box-border bg-background">
+    <div className="h-[calc(100vh-4rem)] w-full overflow-hidden bg-background">
       <StudioClient themes={themes} />
     </div>
   );

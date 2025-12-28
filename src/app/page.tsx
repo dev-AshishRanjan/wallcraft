@@ -39,7 +39,7 @@ export default async function HomePage() {
     <div className="flex flex-col">
 
       {/* 1. HERO SECTION */}
-      <section className="relative -mt-16 pt-32 py-20 md:py-32 overflow-hidden">
+      <section className="relative pt-32 py-20 md:py-32 overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-nord-8/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
         <div className="container mx-auto px-4 text-center max-w-4xl">

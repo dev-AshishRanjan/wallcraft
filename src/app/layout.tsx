@@ -26,7 +26,7 @@ export default function RootLayout({
           themes={["nord", "midnight", "daylight", "latte"]}
         >
           <Navbar themes={themes} categories={categories} />
-          <main className="flex-1 pt-16">
+          <main className="flex-1">
             {children}
           </main>
           <Footer />
