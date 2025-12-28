@@ -3,6 +3,7 @@ import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { ThemeProvider } from "@/components/theme-provider";
+import { getAppConfig } from "@/lib/server-utils";
 
 export const metadata: Metadata = {
   title: "WallCraft | Automated Wallpapers",
@@ -14,6 +15,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { themes, categories } = getAppConfig();
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="flex flex-col min-h-screen bg-background font-sans">
@@ -23,7 +25,7 @@ export default function RootLayout({
           enableSystem={false}
           themes={["nord", "midnight", "daylight", "latte"]}
         >
-          <Navbar />
+          <Navbar themes={themes} categories={categories} />
           <main className="flex-1 pt-16">
             {children}
           </main>

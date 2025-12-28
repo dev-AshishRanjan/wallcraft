@@ -15,7 +15,12 @@ const ROUTES = [
   { name: "Studio", path: "/studio" },
 ];
 
-export function Navbar() {
+interface NavbarProps {
+  themes: string[];
+  categories: string[]; // Added
+}
+
+export function Navbar({ themes, categories }: NavbarProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -57,11 +62,11 @@ export function Navbar() {
 
           {/* 1. Command Search (Hidden on tiny screens, expanded on desktop) */}
           <div className="flex-1 md:flex-none">
-            <CommandMenu />
+            <CommandMenu themes={themes} categories={categories} />
           </div>
 
           {/* 2. GitHub Icon (Desktop) */}
-          <Link href="https://github.com/your-username/wallcraft" target="_blank" className="hidden md:flex">
+          <Link href="https://github.com/dev-AshishRanjan/wallcraft" target="_blank" className="hidden md:flex">
             <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
               <Github className="h-4 w-4" />
               <span className="sr-only">GitHub</span>
@@ -117,7 +122,7 @@ export function Navbar() {
                   <div className="border-t my-2" />
 
                   <Link
-                    href="https://github.com/your-username/wallcraft"
+                    href="https://github.com/dev-AshishRanjan/wallcraft"
                     target="_blank"
                     onClick={() => setIsOpen(false)}
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-primary"

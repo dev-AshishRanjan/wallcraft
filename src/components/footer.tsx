@@ -46,7 +46,7 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li><Link href="/wallpapers" className="hover:text-primary transition-colors">Wallpaper Gallery</Link></li>
               <li><Link href="/studio" className="hover:text-primary transition-colors">WallCraft Studio</Link></li>
-              <li><Link href="https://github.com/your-username/wallcraft/releases" className="hover:text-primary transition-colors">Releases</Link></li>
+              <li><Link href="https://github.com/dev-AshishRanjan/wallcraft/releases" className="hover:text-primary transition-colors">Releases</Link></li>
             </ul>
           </div>
 
@@ -64,7 +64,7 @@ export function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Connect</h3>
             <div className="flex items-center gap-2">
-              <Link href="https://github.com/your-username/wallcraft" target="_blank">
+              <Link href="https://github.com/dev-AshishRanjan/wallcraft" target="_blank">
                 <Button variant="outline" size="icon" className="h-9 w-9 rounded-full bg-background hover:bg-accent hover:text-accent-foreground">
                   <Github className="w-4 h-4" />
                   <span className="sr-only">GitHub</span>

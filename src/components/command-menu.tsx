@@ -3,15 +3,11 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
-  Calculator,
-  Calendar,
-  CreditCard,
-  Settings,
-  User,
   Image as ImageIcon,
   Wand2,
   Home,
-  Laptop
+  Palette,
+  Tag
 } from "lucide-react";
 
 import {
@@ -26,11 +22,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export function CommandMenu() {
+interface CommandMenuProps {
+  themes: string[];
+  categories: string[];
+}
+
+export function CommandMenu({ themes, categories }: CommandMenuProps) {
   const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState(""); // Track user input
   const router = useRouter();
 
-  // Toggle with Cmd+K or Ctrl+K
+  const sortedThemes = React.useMemo(() => [...themes].sort(), [themes]);
+  const sortedCategories = React.useMemo(() => [...categories].sort(), [categories]);
+
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -62,9 +66,21 @@ export function CommandMenu() {
           <span className="text-xs">⌘</span>K
         </kbd>
       </Button>
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
-        <CommandList>
+
+      {/* IMPORTANT: We attach onValueChange to update our 'query' state.
+         We only slice the arrays if query is empty.
+      */}
+      <CommandDialog
+        open={open}
+        onOpenChange={setOpen}
+      >
+        <CommandInput
+          placeholder="Type a command, theme, or category..."
+          value={query}
+          onValueChange={setQuery}
+        />
+
+        <CommandList className="max-h-[300px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <CommandEmpty>No results found.</CommandEmpty>
 
           <CommandGroup heading="Navigation">
@@ -82,16 +98,51 @@ export function CommandMenu() {
             </CommandItem>
           </CommandGroup>
 
-          <CommandGroup heading="Themes">
-            <CommandItem onSelect={() => runCommand(() => router.push("/wallpapers?theme=Nord"))}>
-              <Laptop className="mr-2 h-4 w-4" />
-              Nord
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/wallpapers?theme=Dracula"))}>
-              <Laptop className="mr-2 h-4 w-4" />
-              Dracula
-            </CommandItem>
+          <CommandSeparator />
+
+          <CommandGroup heading="Categories">
+            {sortedCategories
+              // LOGIC: If user is typing, show ALL (let cmdk filter). If not, show top 5.
+              .slice(0, query.length > 0 ? undefined : 5)
+              .map((cat) => (
+                <CommandItem
+                  key={cat}
+                  onSelect={() => runCommand(() => router.push(`/wallpapers?category=${cat}`))}
+                >
+                  <Tag className="mr-2 h-4 w-4" />
+                  {cat}
+                </CommandItem>
+              ))}
+            {/* Visual indicator that there are more */}
+            {!query && sortedCategories.length > 5 && (
+              <div className="px-2 py-1.5 text-xs text-muted-foreground italic">
+                Type to see {sortedCategories.length - 5} more...
+              </div>
+            )}
           </CommandGroup>
+
+          <CommandSeparator />
+
+          <CommandGroup heading="Themes">
+            {sortedThemes
+              // LOGIC: If user is typing, show ALL (let cmdk filter). If not, show top 5.
+              .slice(0, query.length > 0 ? undefined : 5)
+              .map((themeName) => (
+                <CommandItem
+                  key={themeName}
+                  onSelect={() => runCommand(() => router.push(`/wallpapers?theme=${themeName}`))}
+                >
+                  <Palette className="mr-2 h-4 w-4" />
+                  {themeName}
+                </CommandItem>
+              ))}
+            {!query && sortedThemes.length > 5 && (
+              <div className="px-2 py-1.5 text-xs text-muted-foreground italic">
+                Type to see {sortedThemes.length - 5} more...
+              </div>
+            )}
+          </CommandGroup>
+
         </CommandList>
       </CommandDialog>
     </>
