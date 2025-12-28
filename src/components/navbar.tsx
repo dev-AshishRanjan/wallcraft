@@ -1,85 +1,134 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Github, Menu } from "lucide-react";
+import { Github, Menu, Wand2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { CommandMenu } from "@/components/command-menu";
 import { cn } from "@/lib/utils";
 
 const ROUTES = [
   { name: "Home", path: "/" },
   { name: "Wallpapers", path: "/wallpapers" },
-  { name: "Studio", path: "/studio" }, // Placeholder for now
+  { name: "Studio", path: "/studio" },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <header className="fixed top-0 w-full z-50 border-b border-nord-2/50 bg-nord-0/80 backdrop-blur-md">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between">
 
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-nord-8 rounded-lg flex items-center justify-center">
-            <span className="font-bold text-nord-0 text-lg">W</span>
-          </div>
-          <span className="font-bold text-xl text-nord-6 tracking-tight">WallCraft</span>
-        </Link>
-
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8">
-          {ROUTES.map((route) => (
-            <Link
-              key={route.path}
-              href={route.path}
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-nord-8",
-                pathname === route.path ? "text-nord-8" : "text-nord-4/70"
-              )}
-            >
-              {route.name}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Actions */}
-        <div className="hidden md:flex items-center gap-4">
-          <Link href="https://github.com/dev-AshishRanjan/wallcraft" target="_blank">
-            <Button variant="ghost" size="icon" className="text-nord-4 hover:text-nord-8 hover:bg-nord-1">
-              <Github className="w-5 h-5" />
-            </Button>
+        {/* LEFT: Logo & Desktop Nav */}
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <span className="text-lg font-bold">W</span>
+            </div>
+            <span className="hidden font-bold tracking-tight sm:inline-block">
+              WallCraft
+            </span>
           </Link>
-          <Link href="/wallpapers">
-            <Button className="bg-nord-8 text-nord-0 font-bold hover:bg-nord-9">
-              Browse Gallery
-            </Button>
-          </Link>
+
+          <nav className="hidden md:flex items-center gap-1">
+            {ROUTES.map((route) => (
+              <Link
+                key={route.path}
+                href={route.path}
+                className={cn(
+                  "group flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50",
+                  pathname === route.path
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground bg-transparent"
+                )}
+              >
+                {route.name}
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        {/* Mobile Menu */}
-        <div className="md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-nord-4">
-                <Menu className="w-6 h-6" />
+        {/* RIGHT: Search & Actions */}
+        <div className="flex items-center gap-2 md:gap-4">
+
+          {/* 1. Command Search (Hidden on tiny screens, expanded on desktop) */}
+          <div className="flex-1 md:flex-none">
+            <CommandMenu />
+          </div>
+
+          {/* 2. GitHub Icon (Desktop) */}
+          <Link href="https://github.com/your-username/wallcraft" target="_blank" className="hidden md:flex">
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
+              <Github className="h-4 w-4" />
+              <span className="sr-only">GitHub</span>
+            </Button>
+          </Link>
+
+          {/* 3. CTA Button (Desktop - Shows 'Studio' unless we are IN studio) */}
+          {pathname !== '/studio' && (
+            <Link href="/studio" className="hidden md:flex">
+              <Button size="sm" className="font-bold">
+                Try Studio <Wand2 className="ml-2 h-3 w-3" />
               </Button>
-            </SheetTrigger>
-            <SheetContent className="bg-nord-0 border-nord-2 text-nord-4">
-              <div className="flex flex-col gap-6 mt-8">
-                {ROUTES.map((route) => (
+            </Link>
+          )}
+
+          {/* 4. Mobile Menu Trigger */}
+          <div className="md:hidden">
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <SheetHeader className="text-left border-b pb-4 mb-4">
+                  <SheetTitle className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground">
+                      <span className="text-xs font-bold">W</span>
+                    </div>
+                    WallCraft
+                  </SheetTitle>
+                </SheetHeader>
+
+                <div className="flex flex-col gap-4">
+                  {ROUTES.map((route) => (
+                    <Link
+                      key={route.path}
+                      href={route.path}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center justify-between rounded-md px-4 py-3 text-sm font-medium transition-colors",
+                        pathname === route.path
+                          ? "bg-accent text-accent-foreground"
+                          : "hover:bg-accent hover:text-accent-foreground text-muted-foreground"
+                      )}
+                    >
+                      {route.name}
+                      {pathname === route.path && <ArrowRight className="h-4 w-4 opacity-50" />}
+                    </Link>
+                  ))}
+
+                  <div className="border-t my-2" />
+
                   <Link
-                    key={route.path}
-                    href={route.path}
-                    className="text-lg font-medium hover:text-nord-8"
+                    href="https://github.com/your-username/wallcraft"
+                    target="_blank"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-primary"
                   >
-                    {route.name}
+                    <Github className="h-4 w-4" />
+                    Star on GitHub
                   </Link>
-                ))}
-              </div>
-            </SheetContent>
-          </Sheet>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </header>
