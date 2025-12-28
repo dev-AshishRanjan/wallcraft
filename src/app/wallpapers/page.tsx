@@ -12,7 +12,8 @@ import {
   Expand,
   Check,
   ChevronsUpDown,
-  RefreshCw
+  RefreshCw,
+  SlidersHorizontal
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -67,8 +68,6 @@ function WallpapersContent() {
   // --- STATE ---
   const [db, setDb] = useState<WallpaperEntry[]>([]);
   const [isDbLoading, setIsDbLoading] = useState(true);
-
-  // Error State
   const [dbError, setDbError] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -91,17 +90,13 @@ function WallpapersContent() {
     async function loadData() {
       try {
         const res = await fetch(`${DATA_URL}?t=${Date.now()}`);
-        if (!res.ok) {
-          throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        if (!Array.isArray(data)) throw new Error("Invalid Data Format: Expected Array");
-
+        if (!Array.isArray(data)) throw new Error("Invalid Data");
         setDb(data);
       } catch (error: any) {
-        console.error("DB Load Error:", error);
         setDbError(true);
-        setErrorMsg(error.message || "Unknown Network Error");
+        setErrorMsg(error.message || "Unknown Error");
       } finally {
         setIsDbLoading(false);
       }
@@ -113,20 +108,16 @@ function WallpapersContent() {
   const categories = useMemo(() => ["All", ...Array.from(new Set(db.map((w) => w.category))).sort()], [db]);
   const themes = useMemo(() => db.length > 0 ? Object.keys(db[0].variants).sort() : [], [db]);
 
-  // --- 3. SET DEFAULTS & SYNC URL ---
+  // --- 3. SYNC URL & DEFAULTS ---
   useEffect(() => {
     if (themes.length === 0) return;
+    const tUrl = searchParams.get("theme");
+    const cUrl = searchParams.get("category");
 
-    const themeFromUrl = searchParams.get("theme");
-    const categoryFromUrl = searchParams.get("category");
+    if (tUrl && themes.includes(tUrl)) setThemeFilter(tUrl);
+    else if (!themeFilter) setThemeFilter(themes[0]);
 
-    if (themeFromUrl && themes.includes(themeFromUrl)) {
-      setThemeFilter(themeFromUrl);
-    } else if (!themeFilter) {
-      setThemeFilter(themes[0]);
-    }
-
-    if (categoryFromUrl) setCategoryFilter(categoryFromUrl);
+    if (cUrl) setCategoryFilter(cUrl);
   }, [searchParams, themes, themeFilter]);
 
   // --- 4. FILTER LOGIC ---
@@ -150,9 +141,13 @@ function WallpapersContent() {
     return db.filter((wallpaper) => {
       const matchesSearch = wallpaper.title.toLowerCase().includes(debouncedSearch.toLowerCase());
       const matchesCategory = categoryFilter === "All" || wallpaper.category === categoryFilter;
-      return matchesSearch && matchesCategory;
+
+      // FIX: Strictly check if the wallpaper HAS the selected theme
+      const matchesTheme = themeFilter ? wallpaper.variants.hasOwnProperty(themeFilter) : true;
+
+      return matchesSearch && matchesCategory && matchesTheme;
     });
-  }, [db, debouncedSearch, categoryFilter]);
+  }, [db, debouncedSearch, categoryFilter, themeFilter]);
 
   const currentWallpapers = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -190,56 +185,17 @@ function WallpapersContent() {
     document.body.removeChild(link);
   };
 
-  // --- RENDER STATES ---
+  // --- UI RENDER ---
 
-  // 1. FULL PAGE LOADER
-  if (isDbLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 fixed inset-0 z-50">
-        <div className="relative">
-          <Loader2 className="w-16 h-16 text-primary animate-spin" />
-        </div>
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight">WallCraft</h2>
-          <p className="text-muted-foreground animate-pulse">Syncing database...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. ERROR SCREEN
-  if (dbError) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 p-4">
-        <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center">
-          <AlertCircle className="w-10 h-10 text-destructive" />
-        </div>
-        <div className="text-center max-w-md space-y-2">
-          <h2 className="text-2xl font-bold">Failed to load wallpapers</h2>
-          <p className="text-muted-foreground">We couldn't connect to the database. Please check your internet connection.</p>
-        </div>
-
-        {/* EXACT ERROR MESSAGE BOX */}
-        <div className="bg-muted/50 p-4 rounded-lg border font-mono text-xs text-muted-foreground break-all max-w-lg">
-          {errorMsg}
-        </div>
-
-        <Button onClick={() => window.location.reload()} variant="outline" className="gap-2 mt-4">
-          <RefreshCw className="w-4 h-4" /> Try Again
-        </Button>
-      </div>
-    );
-  }
-
-  // 3. MAIN UI
+  // 1. HEADER & TOOLBAR
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
 
-      {/* HEADER & TOOLBAR */}
       <div className="sticky top-16 z-30 bg-background/95 backdrop-blur-sm border-b shadow-sm">
         <div className="container mx-auto px-4 py-4 space-y-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <h1 className="text-2xl font-bold tracking-tight hidden md:block">Gallery</h1>
+
             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
               {/* Search */}
               <div className="relative w-full sm:w-64 shrink-0">
@@ -251,6 +207,7 @@ function WallpapersContent() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+
               {/* Category */}
               <Popover open={openCategoryCombo} onOpenChange={setOpenCategoryCombo}>
                 <PopoverTrigger asChild>
@@ -262,7 +219,8 @@ function WallpapersContent() {
                 <PopoverContent className="w-[200px] p-0">
                   <Command>
                     <CommandInput placeholder="Search category..." />
-                    <CommandList>
+                    {/* FIX: Hide scrollbar in dropdown */}
+                    <CommandList className="max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                       <CommandEmpty>No category found.</CommandEmpty>
                       <CommandGroup>
                         {categories.map((cat) => (
@@ -276,6 +234,7 @@ function WallpapersContent() {
                   </Command>
                 </PopoverContent>
               </Popover>
+
               {/* Theme */}
               {themeFilter && (
                 <Select value={themeFilter} onValueChange={updateTheme}>
@@ -295,9 +254,31 @@ function WallpapersContent() {
         </div>
       </div>
 
-      {/* CONTENT GRID */}
+      {/* 2. CONTENT AREA */}
       <div className="container mx-auto px-4 pt-6">
-        {isFiltering ? (
+
+        {/* A. LOADING STATE (In-Page) */}
+        {isDbLoading ? (
+          <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 animate-in fade-in duration-700">
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            <p className="text-muted-foreground animate-pulse font-medium">Syncing database...</p>
+          </div>
+        ) : dbError ? (
+          /* B. ERROR STATE (In-Page) */
+          <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-destructive" />
+            </div>
+            <div className="text-center max-w-sm">
+              <h3 className="font-bold text-lg">Failed to load wallpapers</h3>
+              <p className="text-sm text-muted-foreground mt-1 mb-4">{errorMsg}</p>
+              <Button onClick={() => window.location.reload()} variant="outline" size="sm" className="gap-2">
+                <RefreshCw className="w-4 h-4" /> Retry
+              </Button>
+            </div>
+          </div>
+        ) : isFiltering ? (
+          /* C. SKELETON GRID */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="rounded-lg border bg-card shadow-sm space-y-3 p-3">
@@ -310,14 +291,25 @@ function WallpapersContent() {
             ))}
           </div>
         ) : (
+          /* D. WALLPAPER GRID */
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {currentWallpapers.map((wp) => {
-                const imageUrl = wp.variants[themeFilter] || Object.values(wp.variants)[0];
+                // Determine URL (Performance Note: Using raw 4K URL with async decoding in FadeInImage)
+                const imageUrl = wp.variants[themeFilter];
+
                 return (
                   <Card key={wp.id} className="group overflow-hidden border-border bg-card hover:border-primary/50 transition-all duration-300">
+
+                    {/* Image Area */}
                     <div className="aspect-[16/9] relative bg-muted overflow-hidden">
-                      <FadeInImage src={imageUrl} alt={wp.title} className="group-hover:scale-105 transition-transform duration-700" />
+                      <FadeInImage
+                        src={imageUrl}
+                        alt={wp.title}
+                        className="group-hover:scale-105 transition-transform duration-700"
+                      />
+
+                      {/* Overlay */}
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[1px]">
                         <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full" onClick={() => { setPreviewTheme(themeFilter); setPreviewWallpaper(wp); }}>
                           <Expand className="w-4 h-4" />
@@ -327,12 +319,25 @@ function WallpapersContent() {
                         </Button>
                       </div>
                     </div>
+
+                    {/* Compact Footer */}
                     <div className="p-3">
                       <div className="flex justify-between items-start gap-2">
-                        <h3 className="font-medium text-sm truncate text-foreground" title={wp.title}>{wp.title}</h3>
-                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal border-border text-muted-foreground shrink-0 max-w-[80px] truncate">{wp.category}</Badge>
+                        <h3 className="font-medium text-sm truncate text-foreground" title={wp.title}>
+                          {wp.title}
+                        </h3>
+                        {/* FIX: Better Badge Visibility & Truncation */}
+                        <Badge
+                          className="text-[10px] h-5 px-1.5 font-normal border-none shrink-0 max-w-[80px] bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        >
+                          <span className="truncate w-full block text-center">
+                            {wp.category}
+                          </span>
+                        </Badge>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-1">By {wp.photographer}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        By {wp.photographer}
+                      </p>
                     </div>
                   </Card>
                 );
@@ -343,11 +348,15 @@ function WallpapersContent() {
             {filteredWallpapers.length === 0 && (
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                 <div className="bg-muted p-4 rounded-full mb-4">
-                  <Search className="w-8 h-8 text-muted-foreground" />
+                  <SlidersHorizontal className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <h2 className="text-lg font-semibold mb-2">No wallpapers found</h2>
-                <p className="text-sm text-muted-foreground max-w-xs mb-6">Try adjusting your search or category filter.</p>
-                <Button variant="outline" onClick={() => { setSearchTerm(""); setCategoryFilter("All"); }}>Clear Filters</Button>
+                <p className="text-sm text-muted-foreground max-w-xs mb-6">
+                  Try adjusting your search or category filter.
+                </p>
+                <Button variant="outline" onClick={() => { setSearchTerm(""); setCategoryFilter("All"); }}>
+                  Clear Filters
+                </Button>
               </div>
             )}
 
@@ -357,7 +366,9 @@ function WallpapersContent() {
                 <Button variant="outline" size="icon" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <span className="text-sm text-muted-foreground">{currentPage} / {totalPages}</span>
+                <span className="text-sm text-muted-foreground">
+                  {currentPage} / {totalPages}
+                </span>
                 <Button variant="outline" size="icon" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -371,7 +382,7 @@ function WallpapersContent() {
         <WallpaperModal
           isOpen={!!previewWallpaper}
           onClose={() => setPreviewWallpaper(null)}
-          imageUrl={previewWallpaper.variants[previewTheme] || Object.values(previewWallpaper.variants)[0]}
+          imageUrl={previewWallpaper.variants[previewTheme]}
           title={previewWallpaper.title}
           theme={previewTheme}
         />
@@ -382,7 +393,7 @@ function WallpapersContent() {
 
 export default function WallpapersPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin" /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <WallpapersContent />
     </Suspense>
   );

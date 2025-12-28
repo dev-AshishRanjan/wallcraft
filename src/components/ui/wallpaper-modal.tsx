@@ -55,18 +55,9 @@ export function WallpaperModal({ isOpen, onClose, imageUrl, title, theme }: Wall
               src={imageUrl}
               alt={title}
               // 'object-contain' ensures we see the whole wallpaper without cropping in preview
-              className="max-h-full max-w-full object-contain shadow-2xl shadow-black/50"
+              className="max-h-full max-w-full object-contain sm:object-cover shadow-2xl shadow-black/50 rounded-md"
             />
           </div>
-
-          {/* Close Btn (Mobile) */}
-          <Button
-            variant="ghost"
-            className="absolute top-4 right-4 text-white bg-black/20 hover:bg-black/40 rounded-full p-2 md:hidden z-50"
-            onClick={onClose}
-          >
-            <X className="w-5 h-5" />
-          </Button>
         </div>
 
         {/* RIGHT: Controls Sidebar */}
