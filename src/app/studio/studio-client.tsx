@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Upload, Download, Loader2, Image as ImageIcon,
-  RefreshCw, X, Layers, ArrowUp, ArrowDown, Plus,
-  Trash2, Wand2, Settings2, ZoomIn
+  RefreshCw, X, ArrowUp, ArrowDown, Plus,
+  Trash2, Wand2, Settings2, ZoomIn, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,6 +22,7 @@ import { processImageStack } from "@/lib/browser-theme-engine";
 import { Theme } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { CompareSlider } from "@/components/ui/compare-slider";
 
 interface StudioClientProps {
   themes: Theme[];
@@ -125,11 +126,14 @@ export function StudioClient({ themes }: StudioClientProps) {
 
   // --- RENDER ---
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] bg-background">
+    <div className="flex flex-col lg:flex-row h-full bg-background">
 
       {/* 1. SIDEBAR (CONTROLS) */}
-      <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-card/30 flex flex-col shrink-0 overflow-hidden">
+      <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-card/30 flex flex-col shrink-0 overflow-hidden h-full">
+        {/* ... Keep sidebar content exactly as before ... */}
+        {/* (Header, ScrollArea, Input, Switch, Theme Stack, Generate Button) */}
 
+        {/* RE-PASTING SIDEBAR FOR CONTEXT IF NEEDED, BUT YOU CAN KEEP EXISTING CODE */}
         <div className="p-4 border-b">
           <h2 className="font-bold flex items-center gap-2">
             <Settings2 className="w-4 h-4 text-primary" /> Configuration
@@ -269,19 +273,23 @@ export function StudioClient({ themes }: StudioClientProps) {
                 <><Wand2 className="w-4 h-4 mr-2" /> Generate Wallpaper</>
               )}
             </Button>
-
           </div>
         </ScrollArea>
       </div>
 
       {/* 2. MAIN WORKSPACE (CANVAS) */}
-      <div className="flex-1 bg-muted/20 flex flex-col relative overflow-hidden">
+      <div className="flex-1 bg-muted/20 flex flex-col relative overflow-hidden h-full">
 
-        {/* Toolbar */}
-        <div className="h-14 border-b bg-background/50 backdrop-blur flex items-center justify-between px-6 shrink-0">
+        {/* Workspace Toolbar */}
+        <div className="h-14 border-b bg-background/50 backdrop-blur flex items-center justify-between px-6 shrink-0 z-10">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <ZoomIn className="w-4 h-4" />
-            <span>Workspace</span>
+            <span className="font-medium">Workspace</span>
+            {processedUrl && (
+              <span className="hidden sm:inline-flex items-center gap-1 text-xs bg-accent/50 px-2 py-0.5 rounded-full ml-2">
+                <Info className="w-3 h-3" /> Drag slider to compare
+              </span>
+            )}
           </div>
           {processedUrl && (
             <Button
@@ -299,21 +307,34 @@ export function StudioClient({ themes }: StudioClientProps) {
         </div>
 
         {/* Canvas Area */}
-        <div className="flex-1 overflow-auto p-8 flex items-center justify-center">
-          {processedUrl ? (
-            <div className="relative shadow-2xl rounded-lg overflow-hidden border bg-background max-w-full max-h-full animate-in zoom-in-95 duration-300">
-              <img src={processedUrl} alt="Result" className="max-w-full max-h-[80vh] object-contain" />
+        <div className="flex-1 overflow-hidden p-0 flex items-center justify-center bg-[url('/grid-pattern.svg')] bg-center relative">
+
+          {processedUrl && previewUrl ? (
+            // --- COMPARISON MODE ---
+            <div className="relative w-full h-full p-8 flex items-center justify-center">
+              <div className="relative shadow-2xl rounded-lg overflow-hidden border bg-background/50 max-w-full max-h-full animate-in zoom-in-95 duration-300">
+                {/* This wrapper limits the size to the image aspect ratio so it fits on screen */}
+                <div className="relative max-h-[calc(100vh-8rem)] aspect-[16/9] min-w-[50vw]">
+                  <CompareSlider
+                    original={previewUrl}
+                    processed={processedUrl}
+                    className="w-full h-full"
+                  />
+                </div>
+              </div>
             </div>
           ) : file ? (
-            <div className="relative shadow-xl rounded-lg overflow-hidden border bg-background opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-              <img src={previewUrl!} alt="Preview" className="max-w-full max-h-[80vh] object-contain" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Badge variant="secondary" className="text-lg px-4 py-2">Original Preview</Badge>
+            // --- PREVIEW MODE ---
+            <div className="relative shadow-xl rounded-lg overflow-hidden border bg-background opacity-80 transition-all duration-500 p-2">
+              <img src={previewUrl!} alt="Preview" className="max-w-full max-h-[80vh] object-contain rounded" />
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <Badge variant="secondary" className="text-lg px-4 py-2 shadow-lg backdrop-blur-md bg-background/80">Original Preview</Badge>
               </div>
             </div>
           ) : (
+            // --- EMPTY STATE ---
             <div className="flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none">
-              <Layers className="w-24 h-24 mb-6 stroke-1" />
+              <ImageIcon className="w-24 h-24 mb-6 stroke-1" />
               <p className="text-xl font-medium">No image loaded</p>
               <p className="text-sm">Upload an image from the sidebar to begin</p>
             </div>

@@ -21,10 +21,10 @@ async function getThemes(): Promise<Theme[]> {
 export default async function StudioPage() {
   const themes = await getThemes();
 
-  // REMOVE padding-top here because the global layout already has pt-16
-  // We want this component to fill the remaining height
+  // FIX: Added -mt-16 to pull the studio workspace up, removing the gap caused by global layout.
+  // We use h-screen to ensure it takes the full viewport.
   return (
-    <div className="h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="-mt-16 h-screen overflow-hidden pt-16 box-border bg-background">
       <StudioClient themes={themes} />
     </div>
   );
