@@ -1,214 +1,327 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Upload, Download, Loader2, Image as ImageIcon, RefreshCw, X } from "lucide-react";
+import {
+  Upload, Download, Loader2, Image as ImageIcon,
+  RefreshCw, X, Layers, ArrowUp, ArrowDown, Plus,
+  Trash2, Wand2, Settings2, ZoomIn
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { processImageClient } from "@/lib/browser-theme-engine";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { processImageStack } from "@/lib/browser-theme-engine";
 import { Theme } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface StudioClientProps {
   themes: Theme[];
 }
 
+type Layer = {
+  id: string;
+  themeName: string;
+};
+
 export function StudioClient({ themes }: StudioClientProps) {
-  // State
+  // --- STATE ---
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null); // Original
-  const [processedUrl, setProcessedUrl] = useState<string | null>(null); // Themed
-
-  const [selectedTheme, setSelectedTheme] = useState<string>(themes[0]?.name || "Nord");
+  const [processedUrl, setProcessedUrl] = useState<string | null>(null); // Result
   const [isProcessing, setIsProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
+  // Mode & Layers
+  const [isStackMode, setIsStackMode] = useState(false);
+  const [simpleTheme, setSimpleTheme] = useState<string>(themes[0]?.name || "Nord");
+  const [layers, setLayers] = useState<Layer[]>([{ id: '1', themeName: themes[0]?.name || "Nord" }]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- Handlers ---
+  // --- ACTIONS ---
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
-      setFile(selected);
-      setPreviewUrl(URL.createObjectURL(selected));
-      setProcessedUrl(null); // Reset processed image
-    }
+    if (e.target.files?.[0]) loadFile(e.target.files[0]);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const selected = e.dataTransfer.files[0];
-      if (!selected.type.startsWith("image/")) return;
-      setFile(selected);
-      setPreviewUrl(URL.createObjectURL(selected));
-      setProcessedUrl(null);
-    }
+    if (e.dataTransfer.files?.[0]) loadFile(e.dataTransfer.files[0]);
+  };
+
+  const loadFile = (f: File) => {
+    if (!f.type.startsWith("image/")) return;
+    setFile(f);
+    setPreviewUrl(URL.createObjectURL(f));
+    setProcessedUrl(null);
   };
 
   const handleProcess = async () => {
-    if (!file || !selectedTheme) return;
-
+    if (!file) return;
     setIsProcessing(true);
 
-    // Small timeout to allow React to render the Loading state before the UI freezes
+    // Give UI a moment to update loading state
     setTimeout(async () => {
       try {
-        const themeData = themes.find(t => t.name === selectedTheme);
-        if (!themeData) return;
+        // 1. Determine Stack
+        let activeStack: string[] = [];
 
-        const url = await processImageClient(file, themeData.colors);
+        if (isStackMode) {
+          activeStack = layers.map(l => l.themeName);
+        } else {
+          activeStack = [simpleTheme];
+        }
+
+        // 2. Get Colors for each layer
+        const paletteStack = activeStack.map(name => {
+          const t = themes.find(x => x.name === name);
+          return t ? t.colors : [];
+        }).filter(colors => colors.length > 0);
+
+        // 3. Process
+        const url = await processImageStack(file, paletteStack);
         setProcessedUrl(url);
       } catch (err) {
         console.error(err);
-        alert("Failed to process image.");
+        alert("Processing failed.");
       } finally {
         setIsProcessing(false);
       }
     }, 100);
   };
 
-  const handleDownload = () => {
-    if (!processedUrl) return;
-    const link = document.createElement("a");
-    link.href = processedUrl;
-    link.download = `wallcraft-${selectedTheme.toLowerCase()}-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // --- LAYER MANAGEMENT ---
+  const addLayer = () => {
+    setLayers([...layers, { id: crypto.randomUUID(), themeName: themes[0].name }]);
   };
 
-  const clearSelection = () => {
-    setFile(null);
-    setPreviewUrl(null);
-    setProcessedUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const removeLayer = (id: string) => {
+    if (layers.length <= 1) return; // Prevent empty
+    setLayers(layers.filter(l => l.id !== id));
   };
 
+  const moveLayer = (index: number, direction: -1 | 1) => {
+    const newLayers = [...layers];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= newLayers.length) return;
+
+    [newLayers[index], newLayers[targetIndex]] = [newLayers[targetIndex], newLayers[index]];
+    setLayers(newLayers);
+  };
+
+  const updateLayerTheme = (id: string, newTheme: string) => {
+    setLayers(layers.map(l => l.id === id ? { ...l, themeName: newTheme } : l));
+  };
+
+  // --- RENDER ---
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] bg-background">
 
-      {/* 1. CONTROL BAR */}
-      <div className="flex flex-col md:flex-row gap-4 items-center bg-nord-1 p-4 rounded-xl border border-nord-2 sticky top-20 z-40 shadow-xl">
+      {/* 1. SIDEBAR (CONTROLS) */}
+      <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-card/30 flex flex-col shrink-0 overflow-hidden">
 
-        {/* Theme Select */}
-        <div className="w-full md:w-64">
-          <Select value={selectedTheme} onValueChange={setSelectedTheme}>
-            <SelectTrigger className="bg-nord-0 border-nord-3 text-nord-4">
-              <SelectValue placeholder="Select Theme" />
-            </SelectTrigger>
-            <SelectContent className="bg-nord-0 border-nord-2 text-nord-4">
-              {themes.map(t => (
-                <SelectItem key={t.name} value={t.name}>{t.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="p-4 border-b">
+          <h2 className="font-bold flex items-center gap-2">
+            <Settings2 className="w-4 h-4 text-primary" /> Configuration
+          </h2>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 w-full md:w-auto ml-auto">
-          {file && (
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-6">
+
+            {/* INPUT SECTION */}
+            <div className="space-y-3">
+              <Label className="text-xs font-bold text-muted-foreground uppercase">Source Image</Label>
+              {!file ? (
+                <div
+                  className={cn(
+                    "border-2 border-dashed rounded-lg h-32 flex flex-col items-center justify-center text-center p-4 cursor-pointer transition-colors",
+                    dragActive ? "border-primary bg-primary/10" : "border-border hover:bg-accent/50"
+                  )}
+                  onDragEnter={() => setDragActive(true)}
+                  onDragLeave={() => setDragActive(false)}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="w-6 h-6 text-muted-foreground mb-2" />
+                  <span className="text-xs font-medium text-muted-foreground">Click or Drag Image</span>
+                </div>
+              ) : (
+                <div className="relative group rounded-lg overflow-hidden border">
+                  <img src={previewUrl!} className="w-full h-32 object-cover opacity-60" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <Button variant="destructive" size="sm" onClick={() => { setFile(null); setProcessedUrl(null); }}>
+                      <Trash2 className="w-4 h-4 mr-2" /> Remove
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
+            </div>
+
+            {/* MODE TOGGLE */}
+            <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg border">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium">Stack Mode</Label>
+                <p className="text-[10px] text-muted-foreground">Apply multiple themes</p>
+              </div>
+              <Switch checked={isStackMode} onCheckedChange={setIsStackMode} />
+            </div>
+
+            {/* THEME CONFIGURATION */}
+            <div className="space-y-3">
+              <Label className="text-xs font-bold text-muted-foreground uppercase flex justify-between items-center">
+                {isStackMode ? "Layer Stack" : "Active Theme"}
+                {isStackMode && (
+                  <span className="text-[10px] font-normal opacity-70">Top to Bottom</span>
+                )}
+              </Label>
+
+              {isStackMode ? (
+                // --- STACK MODE ---
+                <div className="space-y-2">
+                  {layers.map((layer, index) => (
+                    <div key={layer.id} className="flex items-center gap-2 p-2 bg-background border rounded-md shadow-sm group animate-in slide-in-from-left-2 fade-in">
+                      <span className="text-xs font-mono text-muted-foreground w-4">{index + 1}</span>
+                      <Select value={layer.themeName} onValueChange={(val) => updateLayerTheme(layer.id, val)}>
+                        <SelectTrigger className="h-8 text-xs flex-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {themes.map(t => <SelectItem key={t.name} value={t.name}>{t.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Controls */}
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          variant="ghost" size="icon" className="h-6 w-6"
+                          onClick={() => moveLayer(index, -1)}
+                          disabled={index === 0}
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="h-6 w-6"
+                          onClick={() => moveLayer(index, 1)}
+                          disabled={index === layers.length - 1}
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => removeLayer(layer.id)}
+                          disabled={layers.length === 1}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" className="w-full text-xs dashed border-dashed" onClick={addLayer}>
+                    <Plus className="w-3 h-3 mr-2" /> Add Theme Layer
+                  </Button>
+                </div>
+              ) : (
+                // --- SIMPLE MODE ---
+                <Select value={simpleTheme} onValueChange={setSimpleTheme}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {themes.map(t => (
+                      <SelectItem key={t.name} value={t.name}>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-0.5">
+                            {t.colors.slice(0, 3).map(c => (
+                              <div key={c} className="w-2 h-2 rounded-full" style={{ backgroundColor: c }} />
+                            ))}
+                          </div>
+                          {t.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             <Button
-              variant="ghost"
-              onClick={clearSelection}
-              className="text-nord-4 hover:text-nord-11 hover:bg-nord-1"
+              size="lg"
+              className="w-full font-bold shadow-lg"
+              onClick={handleProcess}
+              disabled={!file || isProcessing}
             >
-              <X className="w-4 h-4 mr-2" /> Clear
+              {isProcessing ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+              ) : (
+                <><Wand2 className="w-4 h-4 mr-2" /> Generate Wallpaper</>
+              )}
             </Button>
-          )}
 
-          <Button
-            className="bg-nord-8 text-nord-0 font-bold hover:bg-nord-9 w-full md:w-auto"
-            onClick={handleProcess}
-            disabled={!file || isProcessing}
-          >
-            {isProcessing ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
-            ) : (
-              <><RefreshCw className="w-4 h-4 mr-2" /> Apply Theme</>
-            )}
-          </Button>
+          </div>
+        </ScrollArea>
+      </div>
 
+      {/* 2. MAIN WORKSPACE (CANVAS) */}
+      <div className="flex-1 bg-muted/20 flex flex-col relative overflow-hidden">
+
+        {/* Toolbar */}
+        <div className="h-14 border-b bg-background/50 backdrop-blur flex items-center justify-between px-6 shrink-0">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ZoomIn className="w-4 h-4" />
+            <span>Workspace</span>
+          </div>
           {processedUrl && (
             <Button
-              className="bg-nord-14 text-nord-0 font-bold hover:bg-nord-14/90 w-full md:w-auto"
-              onClick={handleDownload}
+              size="sm"
+              onClick={() => {
+                const link = document.createElement("a");
+                link.href = processedUrl;
+                link.download = `wallcraft-studio-${Date.now()}.png`;
+                link.click();
+              }}
             >
-              <Download className="w-4 h-4 mr-2" /> Download
+              <Download className="w-4 h-4 mr-2" /> Download Result
             </Button>
           )}
         </div>
-      </div>
 
-      {/* 2. MAIN WORKSPACE */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 min-h-[500px]">
-
-        {/* LEFT: UPLOAD / ORIGINAL */}
-        <Card
-          className={cn(
-            "relative flex flex-col items-center justify-center p-8 border-2 border-dashed transition-all h-[500px] overflow-hidden",
-            dragActive ? "border-nord-8 bg-nord-8/10" : "border-nord-3 bg-nord-1",
-            previewUrl ? "border-solid border-nord-2 p-0" : ""
-          )}
-          onDragEnter={() => setDragActive(true)}
-          onDragLeave={() => setDragActive(false)}
-          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          onDrop={handleDrop}
-        >
-          {previewUrl ? (
-            <img src={previewUrl} alt="Original" className="w-full h-full object-contain" />
-          ) : (
-            <div className="text-center space-y-4">
-              <div className="w-20 h-20 bg-nord-2 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Upload className="w-10 h-10 text-nord-4/50" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-nord-6">Upload Image</h3>
-                <p className="text-nord-4/60 mt-2 text-sm">Drag & drop or click to browse</p>
-                <p className="text-nord-4/40 mt-1 text-xs">Supports JPG, PNG (Max 10MB)</p>
-              </div>
-              <Button
-                variant="secondary"
-                onClick={() => fileInputRef.current?.click()}
-                className="mt-4"
-              >
-                Select File
-              </Button>
-            </div>
-          )}
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            accept="image/*"
-            onChange={handleFileSelect}
-          />
-        </Card>
-
-        {/* RIGHT: PREVIEW */}
-        <Card className="relative flex items-center justify-center bg-nord-0 border border-nord-2 h-[500px] overflow-hidden shadow-inner">
+        {/* Canvas Area */}
+        <div className="flex-1 overflow-auto p-8 flex items-center justify-center">
           {processedUrl ? (
-            <img src={processedUrl} alt="Processed" className="w-full h-full object-contain animate-in fade-in duration-500" />
+            <div className="relative shadow-2xl rounded-lg overflow-hidden border bg-background max-w-full max-h-full animate-in zoom-in-95 duration-300">
+              <img src={processedUrl} alt="Result" className="max-w-full max-h-[80vh] object-contain" />
+            </div>
+          ) : file ? (
+            <div className="relative shadow-xl rounded-lg overflow-hidden border bg-background opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+              <img src={previewUrl!} alt="Preview" className="max-w-full max-h-[80vh] object-contain" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Badge variant="secondary" className="text-lg px-4 py-2">Original Preview</Badge>
+              </div>
+            </div>
           ) : (
-            <div className="text-center text-nord-4/30">
-              <ImageIcon className="w-16 h-16 mx-auto mb-4 opacity-20" />
-              <p>Preview will appear here</p>
+            <div className="flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none">
+              <Layers className="w-24 h-24 mb-6 stroke-1" />
+              <p className="text-xl font-medium">No image loaded</p>
+              <p className="text-sm">Upload an image from the sidebar to begin</p>
             </div>
           )}
-
-          {/* Loading Overlay */}
-          {isProcessing && (
-            <div className="absolute inset-0 bg-nord-0/80 backdrop-blur-sm flex flex-col items-center justify-center z-20">
-              <Loader2 className="w-12 h-12 text-nord-8 animate-spin mb-4" />
-              <p className="text-nord-4 font-medium animate-pulse">Analyzing Pixels...</p>
-            </div>
-          )}
-        </Card>
+        </div>
 
       </div>
+
     </div>
   );
 }

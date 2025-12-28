@@ -13,7 +13,6 @@ function getNearestColor(r: number, g: number, b: number, palette: number[][]): 
   let nearest = palette[0];
 
   for (const color of palette) {
-    // Euclidean distance (no sqrt needed for comparison)
     const dist = (r - color[0]) ** 2 + (g - color[1]) ** 2 + (b - color[2]) ** 2;
     if (dist < minDist) {
       minDist = dist;
@@ -24,23 +23,22 @@ function getNearestColor(r: number, g: number, b: number, palette: number[][]): 
 }
 
 /**
- * Processes an image file with the given theme palette
+ * Processes an image file with a STACK of palettes sequentially.
  */
-export async function processImageClient(
+export async function processImageStack(
   imageFile: File,
-  themeColors: string[]
+  themeStack: string[][] // Array of Palettes (each palette is array of hex strings)
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.src = URL.createObjectURL(imageFile);
 
     img.onload = () => {
-      // 1. Setup Canvas
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       if (!ctx) return reject("Canvas not supported");
 
-      // Set dimensions (limit to 4K to prevent browser crash)
+      // Limit to 4K
       const MAX_WIDTH = 3840;
       let width = img.naturalWidth;
       let height = img.naturalHeight;
@@ -54,42 +52,37 @@ export async function processImageClient(
       canvas.width = width;
       canvas.height = height;
 
-      // 2. Draw Original
       ctx.drawImage(img, 0, 0, width, height);
 
-      // 3. Get Raw Pixels
       const imageData = ctx.getImageData(0, 0, width, height);
-      const data = imageData.data; // The Uint8ClampedArray (R,G,B,A, R,G,B,A...)
+      const data = imageData.data;
 
-      // 4. Pre-calculate RGB Palette
-      const rgbPalette = themeColors.map(hexToRgb);
+      // Pre-calculate ALL palettes in the stack
+      const rgbPalettes = themeStack.map(palette => palette.map(hexToRgb));
 
-      // 5. Pixel Loop (Heavy CPU Task)
+      // Pixel Loop
       for (let i = 0; i < data.length; i += 4) {
-        // Skip transparent pixels
-        if (data[i + 3] === 0) continue;
+        if (data[i + 3] === 0) continue; // Skip alpha
 
-        const [r, g, b] = getNearestColor(data[i], data[i + 1], data[i + 2], rgbPalette);
+        let [r, g, b] = [data[i], data[i + 1], data[i + 2]];
 
-        data[i] = r;     // Red
-        data[i + 1] = g; // Green
-        data[i + 2] = b; // Blue
-        // data[i+3] is Alpha, leave it
+        // PIPELINE: Run pixel through every theme layer in order
+        for (const palette of rgbPalettes) {
+          [r, g, b] = getNearestColor(r, g, b, palette);
+        }
+
+        data[i] = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
       }
 
-      // 6. Put Pixels Back
       ctx.putImageData(imageData, 0, 0);
 
-      // 7. Export to Blob URL
       canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(URL.createObjectURL(blob));
-        } else {
-          reject("Processing failed");
-        }
+        if (blob) resolve(URL.createObjectURL(blob));
+        else reject("Processing failed");
       }, "image/png");
 
-      // Cleanup
       URL.revokeObjectURL(img.src);
     };
 
