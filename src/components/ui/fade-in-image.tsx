@@ -70,13 +70,16 @@ export function FadeInImage({ src, alt, className, priority = false, ...props }:
           src={src}
           alt={alt}
           className={cn(
-            "w-full h-full object-cover transition-all duration-700 ease-in-out will-change-transform",
-            isLoaded ? "opacity-100 scale-100 blur-0" : "opacity-0 scale-105 blur-lg",
+            "w-full h-full object-cover transition-all duration-700 ease-in-out will-change-[opacity,transform]",
+            // Blur-up Effect Logic
+            isLoaded
+              ? "opacity-100 scale-100 blur-0 grayscale-0"
+              : "opacity-0 scale-110 blur-xl grayscale",
             className
           )}
           onLoad={() => setIsLoaded(true)}
           onError={() => setHasError(true)}
-          loading={priority ? "eager" : "lazy"}
+          loading={priority ? "eager" : undefined}
           decoding="async"
           {...props}
         />
