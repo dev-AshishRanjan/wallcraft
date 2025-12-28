@@ -25,10 +25,10 @@ export function Footer() {
     <footer className="w-full border-t bg-card/30 backdrop-blur-sm mt-auto">
       {/* Tighter vertical padding (py-8) for a denser production feel */}
       <div className="container mx-auto px-4 py-8 md:py-10">
-        
+
         {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          
+
           {/* 1. Brand & Description */}
           <div className="space-y-3">
             <Link href="/" className="flex items-center gap-2">
@@ -48,7 +48,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/wallpapers" className="hover:text-primary transition-colors">Gallery</Link></li>
               <li><Link href="/studio" className="hover:text-primary transition-colors">Studio</Link></li>
-              <li><Link href="https://github.com/your-username/wallcraft/releases" className="hover:text-primary transition-colors">Releases</Link></li>
+              <li><Link href="https://github.com/dev-AshishRanjan/wallcraft/releases" className="hover:text-primary transition-colors">Releases</Link></li>
             </ul>
           </div>
 
@@ -66,7 +66,7 @@ export function Footer() {
           <div>
             <h3 className="font-semibold mb-3 text-sm text-foreground">Connect</h3>
             <div className="flex items-center gap-2">
-              <Link href="https://github.com/your-username/wallcraft" target="_blank">
+              <Link href="https://github.com/dev-AshishRanjan/wallcraft" target="_blank">
                 <Button variant="outline" size="icon" className="h-8 w-8 rounded-full bg-background hover:bg-accent hover:text-accent-foreground border-border/60">
                   <Github className="w-4 h-4" />
                   <span className="sr-only">GitHub</span>
@@ -84,7 +84,7 @@ export function Footer() {
 
         {/* Bottom Bar - Reduced top margin (mt-8) and padding (pt-6) */}
         <div className="mt-8 pt-6 border-t border-border/40 flex flex-col md:flex-row justify-between items-center gap-4">
-          
+
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>© {new Date().getFullYear()} WallCraft. Built with</span>
             <Heart className="w-3 h-3 text-destructive fill-current" />
