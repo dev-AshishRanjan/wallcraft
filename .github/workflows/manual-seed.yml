@@ -1,0 +1,85 @@
+name: Manual Database Seed
+
+on:
+  workflow_dispatch:
+    inputs:
+      category_count:
+        description: 'Number of Categories to Target'
+        required: true
+        default: '5'
+        type: choice
+        options: 
+          - '3'
+          - '5'
+          - '10'
+          - '20'
+      images_per_category:
+        description: 'Images per Category (Max 30)'
+        required: true
+        default: '5'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  seed-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Bulk Generator
+        id: generator
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: |
+          # Pass inputs as flags
+          npx tsx scripts/generate-bulk-wallpapers.ts \
+            --cats=${{ inputs.category_count }} \
+            --imgs=${{ inputs.images_per_category }}
+
+      - name: Check for Changes
+        id: verify_diff
+        run: |
+          if [[ -n $(git status -s) ]]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No new wallpapers found. Exiting."
+          fi
+
+      - name: Commit Database Changes
+        if: steps.verify_diff.outputs.has_changes == 'true'
+        run: |
+          git config --global user.name 'WallCraft Bot'
+          git config --global user.email 'bot@wallcraft.app'
+          
+          git add public/database.json history.json
+          git commit -m "chore(db): seeded ${{ inputs.category_count }} cats x ${{ inputs.images_per_category }} imgs [skip ci]"
+          git push
+
+      - name: Create GitHub Release
+        if: steps.verify_diff.outputs.has_changes == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="db-$(date +'%Y%m%d-%H%M%S')"
+          
+          # Read the generated markdown body
+          # We use gh release create with --notes-file
+          
+          gh release create "$TAG_NAME" \
+            --title "Update $TAG_NAME" \
+            --notes-file release_body.md \
+            --target main
