@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import { ensureDirectory, loadCategories, loadHistory, loadThemes } from "./utils";
 import axios from "axios";
+import { ensureDirectory, loadCategories, loadThemes } from "./utils";
 import { applyThemeToImage } from "./process";
 
 // Load environment variables
@@ -12,6 +12,7 @@ dotenv.config();
 const DATABASE_PATH = path.join(process.cwd(), "public/database.json");
 const HISTORY_PATH = path.join(process.cwd(), "history.json");
 const RELEASE_BODY_PATH = path.join(process.cwd(), "release_body.md");
+const OUTPUT_DIR = path.join(process.cwd(), "output");
 
 const UNSPLASH_API_URL = "https://api.unsplash.com";
 
@@ -19,6 +20,16 @@ const UNSPLASH_API_URL = "https://api.unsplash.com";
 interface Theme {
   name: string;
   colors: string[];
+}
+
+interface WallpaperEntry {
+  id: string;
+  title: string;
+  category: string;
+  photographer: string;
+  originalUrl: string; // CamelCase to match Frontend
+  date: string;
+  variants: Record<string, string>; // Required for Frontend to work
 }
 
 // --- HELPER FUNCTIONS ---
@@ -72,25 +83,25 @@ async function fetchUnsplashBatch(query: string, count: number): Promise<any[]> 
 
 async function main() {
   console.log("🚀 Starting Bulk Generation...");
-  const outputDir = path.join(__dirname, '../output');
-  ensureDirectory(outputDir);
+  ensureDirectory(OUTPUT_DIR);
 
   const { categoryCount, imagesPerCategory } = getArgs();
-  console.log(`⚙️ Config: ${categoryCount} Categories, ${imagesPerCategory} Images/Cat`);
+  console.log(`⚙️  Config: ${categoryCount} Categories, ${imagesPerCategory} Images/Cat`);
 
   // 1. Load Data
-  const database = loadJson(DATABASE_PATH);
-  const themes = loadThemes();
+  const database: WallpaperEntry[] = loadJson(DATABASE_PATH);
+  const history: string[] = loadJson(HISTORY_PATH);
   const categories = loadCategories();
-  const history = loadHistory();
+  const themes = loadThemes(); // Assuming returns { name: string, colors: string[] }[]
 
-  console.log(`🎨 Loaded ${themes.length} themes: ${themes.join(", ")}`);
+  // FIX: Properly map theme names for logging
+  console.log(`🎨 Loaded ${themes.length} themes: ${themes.map(t => t.name).join(", ")}`);
 
   // 2. Select Categories
   const targetCategories = getRandomCategories(categories, categoryCount);
   console.log(`🎯 Targets: ${targetCategories.join(", ")}`);
 
-  const newEntries = [];
+  const newEntries: WallpaperEntry[] = [];
   const newHistoryIds: string[] = [];
 
   // 3. Process
@@ -110,38 +121,45 @@ async function main() {
         }
 
         let rawTitle = photo.description || photo.alt_description || `${category} Wallpaper`;
-
         // Formatting: Capitalize first letter, truncate if too long (max 50 chars)
         rawTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
         if (rawTitle.length > 50) rawTitle = rawTitle.substring(0, 47) + '...';
-
-        // Clean for Filenames/Tags (Optional, mostly for display)
         const imageTitle = rawTitle.replace(/\n/g, ' ').trim();
-        console.log(`🖼️ Image Title: "${imageTitle}"`);
 
-        // Download High-Res Buffer
-        const downloadUrl = photo.urls.raw + '&q=85&w=3840';
-        const imgBuffer = (await axios({ url: downloadUrl, responseType: 'arraybuffer' })).data;
+        console.log(`🖼️ Processing: "${imageTitle}"`);
 
-        // Process Themes
-        for (const theme of themes) {
-          await applyThemeToImage(imgBuffer, theme, outputDir, photo.id);
+        // DOWNLOAD & PROCESS (Local Artifact Generation)
+        try {
+          const downloadUrl = photo.urls.raw + '&q=85&w=3840';
+          const imgBuffer = (await axios({ url: downloadUrl, responseType: 'arraybuffer' })).data;
+
+          for (const theme of themes) {
+            await applyThemeToImage(imgBuffer, theme, OUTPUT_DIR, photo.id);
+          }
+        } catch (procErr) {
+          console.warn(`⚠️ Processing warning (image might be too large or network fail):`, procErr);
+          // We continue even if local processing fails, because the app relies on the Raw URL.
         }
 
-        const entry = {
+        // CONSTRUCT DB ENTRY
+        const variants: Record<string, string> = {};
+        themes.forEach((t: Theme) => {
+          variants[t.name] = photo.urls.raw;
+        });
+
+        const entry: WallpaperEntry = {
           id: photo.id,
           title: imageTitle,
           category: category,
-          original_url: photo.links.html,
+          originalUrl: photo.links.html,
           photographer: photo.user.name,
-          photographer_username: photo.user.username,
-          themes: themes.map(t => t.name),
-          created_at: new Date().toISOString()
+          date: new Date().toISOString(),
+          variants: variants
         };
 
         newEntries.push(entry);
         newHistoryIds.push(photo.id);
-        console.log(`✅ Added: ${entry.id}`);
+        console.log(`✅ Added to DB: ${entry.id}`);
       }
     } catch (e) {
       console.error(`❌ Failed to process category ${category}:`, e);
@@ -163,7 +181,7 @@ async function main() {
     mdContent += `| :--- | :--- | :--- | :--- |\n`;
 
     newEntries.forEach(w => {
-      mdContent += `| ${w.title} | **${w.category}** | ${w.photographer} | [Original Work](${w.original_url}) |\n`;
+      mdContent += `| ${w.title} | **${w.category}** | ${w.photographer} | [View on Unsplash](${w.originalUrl}) |\n`;
     });
 
     fs.writeFileSync(RELEASE_BODY_PATH, mdContent);
@@ -171,8 +189,7 @@ async function main() {
     console.log(`\n✨ Successfully added ${newEntries.length} items.`);
     console.log(`📝 Release notes generated at ${RELEASE_BODY_PATH}`);
   } else {
-    console.log("\n ⚠️ No new items generated.");
-    // Create empty file so workflow doesn't crash if it tries to read
+    console.log("\n⚠️ No new items generated.");
     fs.writeFileSync(RELEASE_BODY_PATH, "");
   }
 }
