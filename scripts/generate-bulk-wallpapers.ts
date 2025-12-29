@@ -9,8 +9,8 @@ import { applyThemeToImage } from "./process";
 dotenv.config();
 
 // --- CONFIGURATION ---
-const DATABASE_PATH = path.join(__dirname, "public/database.json");
-const HISTORY_PATH = path.join(__dirname, "history.json");
+const DATABASE_PATH = path.join(__dirname, "../public/database.json");
+const HISTORY_PATH = path.join(__dirname, "../history.json");
 const OUTPUT_DIR = path.join(__dirname, '../output');
 const RELEASE_BODY_PATH = path.join(OUTPUT_DIR, "release_body.md");
 const RELEASE_TAG_PATH = path.join(OUTPUT_DIR, "tag_name.txt");
