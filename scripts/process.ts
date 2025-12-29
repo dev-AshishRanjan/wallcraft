@@ -5,7 +5,6 @@ import fs from 'fs';
 import dotenv from "dotenv";
 import { loadThemes, loadCategories, loadHistory, saveHistory, ensureDirectory, Theme } from './utils';
 import { updateDatabase } from './update-db';
-import { fileURLToPath } from "url";
 
 dotenv.config();
 
@@ -196,8 +195,8 @@ ${themes.map(t => `- **${t.name}**`).join('\n')}
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main().catch(err => {
+if (require.main === module) {
+  main().catch((err) => {
     console.error("Fatal Error:", err);
     process.exit(1);
   });

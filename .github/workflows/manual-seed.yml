@@ -43,7 +43,8 @@ jobs:
       - name: Run Bulk Generator
         id: generator
         env:
-          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          UNSPLASH_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }} 
         run: |
           npx tsx scripts/generate-bulk-wallpapers.ts \
             --cats=${{ inputs.category_count }} \
@@ -59,33 +60,35 @@ jobs:
             echo "No new wallpapers found. Exiting."
           fi
 
-      - name: Commit and Release
-        if: steps.verify_diff.outputs.has_changes == 'true'
+      - name: Generate Release Metadata
+        run: |
+          # Create a simple JSON with timestamp. 
+          # ideally, your process.ts should write a 'meta.json' with Unsplash credits.
+          # If process.ts handles it, you can skip this 'echo'.
+          if [ ! -f output/meta.json ]; then
+            echo "{\"generated_at\": \"$(date -u)\", \"run_id\": \"${{ github.run_id }}\"}" > output/meta.json
+          fi
+
+      - name: Commit DB & History
+        run: |
+          git config --global user.name 'WallCraft Bulk Bot'
+          git config --global user.email 'bot@wallcraft.app'
+          git add history.json public/database.json
+          git commit -m "chore(db): seeded ${{ inputs.category_count }} cats x ${{ inputs.images_per_category }} imgs [skip ci]"
+          git push
+      
+      - name: Read Tag Name
+        id: tag_reader
+        run: |
+          TAG=$(cat output/tag_name.txt)
+          echo "TAG_NAME=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create Release & Upload Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag_reader.outputs.TAG_NAME }}
+          name: ${{ steps.tag_reader.outputs.TAG_NAME }}
+          body_path: output/release_body.md
+          files: output/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # 1. Configure Git
-          git config --global user.name 'WallCraft Bot'
-          git config --global user.email 'bot@wallcraft.app'
-          
-          # 2. Commit Changes
-          git add public/database.json history.json
-          git commit -m "chore(db): seeded ${{ inputs.category_count }} cats x ${{ inputs.images_per_category }} imgs [skip ci]"
-          
-          # 3. Generate Tag Name
-          TAG_NAME="db-$(date +'%Y%m%d-%H%M%S')"
-          echo "Generated Tag: $TAG_NAME"
-          
-          # 4. Push Commit explicitly to dev
-          git push origin HEAD:dev
-          
-          # 5. Create & Push Tag MANUALLY (Fixes 'target_commitish' error)
-          # We tag the current commit (HEAD) which we just pushed
-          git tag $TAG_NAME
-          git push origin $TAG_NAME
-          
-          # 6. Create Release from EXISTING Tag
-          # We don't use --target here because the tag already exists on remote
-          gh release create "$TAG_NAME" \
-            --title "Update $TAG_NAME" \
-            --notes-file release_body.md

@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 import axios from "axios";
 import { ensureDirectory, loadCategories, loadThemes } from "./utils";
 import { applyThemeToImage } from "./process";
-import { fileURLToPath } from "url";
 
 // Load environment variables
 dotenv.config();
@@ -13,6 +12,7 @@ dotenv.config();
 const DATABASE_PATH = path.join(process.cwd(), "public/database.json");
 const HISTORY_PATH = path.join(process.cwd(), "history.json");
 const RELEASE_BODY_PATH = path.join(process.cwd(), "release_body.md");
+const RELEASE_TAG_PATH = path.join(process.cwd(), "tag_name.txt");
 const OUTPUT_DIR = path.join(process.cwd(), "output");
 
 const UNSPLASH_API_URL = "https://api.unsplash.com";
@@ -62,8 +62,8 @@ function getArgs() {
 }
 
 async function fetchUnsplashBatch(query: string, count: number): Promise<any[]> {
-  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
-  if (!accessKey) throw new Error("Missing UNSPLASH_ACCESS_KEY");
+  const accessKey = process.env.UNSPLASH_KEY;
+  if (!accessKey) throw new Error("Missing UNSPLASH_KEY");
 
   // Unsplash max count is 30 per request
   const safeCount = Math.min(count, 30);
@@ -105,6 +105,13 @@ async function main() {
   const newEntries: WallpaperEntry[] = [];
   const newHistoryIds: string[] = [];
 
+  const repoName = process.env.GITHUB_REPOSITORY || 'dev-AshishRanjan/wallcraft';
+
+  const date = new Date();
+  const tagName = `db-${date.toISOString().slice(0, 10).replace(/-/g, '')}-${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+
+  const baseUrl = `https://github.com/${repoName}/releases/download/${tagName}`;
+
   // 3. Process
   for (const category of targetCategories) {
     console.log(`\n📸 Fetching '${category}'...`);
@@ -145,7 +152,8 @@ async function main() {
         // CONSTRUCT DB ENTRY
         const variants: Record<string, string> = {};
         themes.forEach((t: Theme) => {
-          variants[t.name] = photo.urls.raw;
+          const fileName = `wallpaper-${t.name.toLowerCase().replace(/\s+/g, '-')}-${photo.id}.png`;
+          variants[t.name] = `${baseUrl}/${fileName}`;
         });
 
         const entry: WallpaperEntry = {
@@ -186,6 +194,7 @@ async function main() {
     });
 
     fs.writeFileSync(RELEASE_BODY_PATH, mdContent);
+    fs.writeFileSync(RELEASE_TAG_PATH, tagName);
 
     console.log(`\n✨ Successfully added ${newEntries.length} items.`);
     console.log(`📝 Release notes generated at ${RELEASE_BODY_PATH}`);
@@ -195,8 +204,8 @@ async function main() {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main().catch(err => {
+if (require.main === module) {
+  main().catch((err) => {
     console.error("Fatal Error:", err);
     process.exit(1);
   });
