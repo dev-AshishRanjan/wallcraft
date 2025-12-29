@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0 
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -44,7 +45,6 @@ jobs:
         env:
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         run: |
-          # Pass inputs as flags
           npx tsx scripts/generate-bulk-wallpapers.ts \
             --cats=${{ inputs.category_count }} \
             --imgs=${{ inputs.images_per_category }}
@@ -59,27 +59,33 @@ jobs:
             echo "No new wallpapers found. Exiting."
           fi
 
-      - name: Commit Database Changes
-        if: steps.verify_diff.outputs.has_changes == 'true'
-        run: |
-          git config --global user.name 'WallCraft Bot'
-          git config --global user.email 'bot@wallcraft.app'
-          
-          git add public/database.json history.json
-          git commit -m "chore(db): seeded ${{ inputs.category_count }} cats x ${{ inputs.images_per_category }} imgs [skip ci]"
-          git push
-
-      - name: Create GitHub Release
+      - name: Commit and Release
         if: steps.verify_diff.outputs.has_changes == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # 1. Configure Git
+          git config --global user.name 'WallCraft Bot'
+          git config --global user.email 'bot@wallcraft.app'
+          
+          # 2. Commit Changes
+          git add public/database.json history.json
+          git commit -m "chore(db): seeded ${{ inputs.category_count }} cats x ${{ inputs.images_per_category }} imgs [skip ci]"
+          
+          # 3. Generate Tag Name
           TAG_NAME="db-$(date +'%Y%m%d-%H%M%S')"
+          echo "Generated Tag: $TAG_NAME"
           
-          # Read the generated markdown body
-          # We use gh release create with --notes-file
+          # 4. Push Commit explicitly to dev
+          git push origin HEAD:dev
           
+          # 5. Create & Push Tag MANUALLY (Fixes 'target_commitish' error)
+          # We tag the current commit (HEAD) which we just pushed
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+          
+          # 6. Create Release from EXISTING Tag
+          # We don't use --target here because the tag already exists on remote
           gh release create "$TAG_NAME" \
             --title "Update $TAG_NAME" \
-            --notes-file release_body.md \
-            --target main
+            --notes-file release_body.md
