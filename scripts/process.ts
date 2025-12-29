@@ -11,7 +11,7 @@ dotenv.config();
 
 // 1. Math: Euclidean Color Distance
 // Calculates which theme color is closest to the current pixel
-function getNearestColor(pixel: number[], palette: number[][]): number[] {
+export function getNearestColor(pixel: number[], palette: number[][]): number[] {
   let minDistance = Infinity;
   let nearest = palette[0];
 
@@ -31,7 +31,7 @@ function getNearestColor(pixel: number[], palette: number[][]): number[] {
 }
 
 // 2. Image Processor
-async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: string, originalId: string) {
+export async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outputDir: string, originalId: string) {
   console.log(`🎨 Applying theme: ${theme.name}...`);
 
   // 1. Initialize Sharp

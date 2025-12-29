@@ -1,6 +1,9 @@
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
+import { ensureDirectory, loadCategories, loadHistory, loadThemes } from "./utils";
+import axios from "axios";
+import { applyThemeToImage } from "./process";
 
 // Load environment variables
 dotenv.config();
@@ -8,8 +11,6 @@ dotenv.config();
 // --- CONFIGURATION ---
 const DATABASE_PATH = path.join(process.cwd(), "public/database.json");
 const HISTORY_PATH = path.join(process.cwd(), "history.json");
-const CATEGORIES_PATH = path.join(process.cwd(), "categories.json");
-const THEMES_DIR = path.join(process.cwd(), "themes");
 const RELEASE_BODY_PATH = path.join(process.cwd(), "release_body.md");
 
 const UNSPLASH_API_URL = "https://api.unsplash.com";
@@ -18,16 +19,6 @@ const UNSPLASH_API_URL = "https://api.unsplash.com";
 interface Theme {
   name: string;
   colors: string[];
-}
-
-interface WallpaperEntry {
-  id: string;
-  title: string;
-  category: string;
-  photographer: string;
-  originalUrl: string;
-  date: string;
-  variants: Record<string, string>;
 }
 
 // --- HELPER FUNCTIONS ---
@@ -40,15 +31,6 @@ function loadJson(filePath: string) {
     console.error(`Error reading ${filePath}`, e);
     return [];
   }
-}
-
-function getThemes(): string[] {
-  if (!fs.existsSync(THEMES_DIR)) return ["Nord", "Dracula"]; // Fallback
-  const files = fs.readdirSync(THEMES_DIR).filter((file) => file.endsWith(".json"));
-  return files.map((file) => {
-    const content = fs.readFileSync(path.join(THEMES_DIR, file), "utf-8");
-    return JSON.parse(content).name;
-  });
 }
 
 function getRandomCategories(allCategories: string[], count: number): string[] {
@@ -78,7 +60,7 @@ async function fetchUnsplashBatch(query: string, count: number): Promise<any[]> 
 
   const res = await fetch(url);
   if (!res.ok) {
-    console.error(`   ❌ Unsplash API Error: ${res.status} ${res.statusText}`);
+    console.error(`❌ Unsplash API Error: ${res.status} ${res.statusText}`);
     return [];
   }
 
@@ -90,15 +72,17 @@ async function fetchUnsplashBatch(query: string, count: number): Promise<any[]> 
 
 async function main() {
   console.log("🚀 Starting Bulk Generation...");
+  const outputDir = path.join(__dirname, '../output');
+  ensureDirectory(outputDir);
 
   const { categoryCount, imagesPerCategory } = getArgs();
-  console.log(`⚙️  Config: ${categoryCount} Categories, ${imagesPerCategory} Images/Cat`);
+  console.log(`⚙️ Config: ${categoryCount} Categories, ${imagesPerCategory} Images/Cat`);
 
   // 1. Load Data
-  const database: WallpaperEntry[] = loadJson(DATABASE_PATH);
-  const history: string[] = loadJson(HISTORY_PATH);
-  const categories: string[] = loadJson(CATEGORIES_PATH);
-  const themes = getThemes();
+  const database = loadJson(DATABASE_PATH);
+  const themes = loadThemes();
+  const categories = loadCategories();
+  const history = loadHistory();
 
   console.log(`🎨 Loaded ${themes.length} themes: ${themes.join(", ")}`);
 
@@ -106,7 +90,7 @@ async function main() {
   const targetCategories = getRandomCategories(categories, categoryCount);
   console.log(`🎯 Targets: ${targetCategories.join(", ")}`);
 
-  const newEntries: WallpaperEntry[] = [];
+  const newEntries = [];
   const newHistoryIds: string[] = [];
 
   // 3. Process
@@ -121,29 +105,46 @@ async function main() {
 
       for (const photo of photos) {
         if (history.includes(photo.id) || newHistoryIds.includes(photo.id)) {
-          console.log(`   ⚠️ Duplicate skipped: ${photo.id}`);
+          console.log(`⚠️ Duplicate skipped: ${photo.id}`);
           continue;
         }
 
-        const variants: Record<string, string> = {};
-        themes.forEach(t => variants[t] = photo.urls.raw);
+        let rawTitle = photo.description || photo.alt_description || `${category} Wallpaper`;
 
-        const entry: WallpaperEntry = {
+        // Formatting: Capitalize first letter, truncate if too long (max 50 chars)
+        rawTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
+        if (rawTitle.length > 50) rawTitle = rawTitle.substring(0, 47) + '...';
+
+        // Clean for Filenames/Tags (Optional, mostly for display)
+        const imageTitle = rawTitle.replace(/\n/g, ' ').trim();
+        console.log(`🖼️ Image Title: "${imageTitle}"`);
+
+        // Download High-Res Buffer
+        const downloadUrl = photo.urls.raw + '&q=85&w=3840';
+        const imgBuffer = (await axios({ url: downloadUrl, responseType: 'arraybuffer' })).data;
+
+        // Process Themes
+        for (const theme of themes) {
+          await applyThemeToImage(imgBuffer, theme, outputDir, photo.id);
+        }
+
+        const entry = {
           id: photo.id,
-          title: photo.alt_description || `${category} Wallpaper`,
+          title: imageTitle,
           category: category,
+          original_url: photo.links.html,
           photographer: photo.user.name,
-          originalUrl: photo.links.html,
-          date: new Date().toISOString(),
-          variants: variants
+          photographer_username: photo.user.username,
+          themes: themes.map(t => t.name),
+          created_at: new Date().toISOString()
         };
 
         newEntries.push(entry);
         newHistoryIds.push(photo.id);
-        console.log(`   ✅ Added: ${entry.id}`);
+        console.log(`✅ Added: ${entry.id}`);
       }
     } catch (e) {
-      console.error(`   ❌ Failed to process category ${category}:`, e);
+      console.error(`❌ Failed to process category ${category}:`, e);
     }
   }
 
@@ -158,16 +159,11 @@ async function main() {
 
     // Generate Markdown Table for Release
     let mdContent = `### 🚀 Added ${newEntries.length} New Wallpapers\n\n`;
-    mdContent += `| Preview | Category | Photographer | Theme Support |\n`;
+    mdContent += `| Title | Category  | Photographer | Original Image|\n`;
     mdContent += `| :--- | :--- | :--- | :--- |\n`;
 
     newEntries.forEach(w => {
-      // Use thumb url for table to keep it light
-      // Note: variants point to raw, but for preview we want 'thumb' which we don't store in DB directly currently. 
-      // We can infer it or just leave a link.
-      // For professional look, we link the title.
-      const thumb = `![img](${w.variants[themes[0]]}&q=10&w=100)`;
-      mdContent += `| ${thumb} | **${w.category}** | [${w.photographer}](${w.originalUrl}) | ✅ All |\n`;
+      mdContent += `| ${w.title} | **${w.category}** | ${w.photographer} | [Original Work](${w.original_url}) |\n`;
     });
 
     fs.writeFileSync(RELEASE_BODY_PATH, mdContent);
@@ -175,7 +171,7 @@ async function main() {
     console.log(`\n✨ Successfully added ${newEntries.length} items.`);
     console.log(`📝 Release notes generated at ${RELEASE_BODY_PATH}`);
   } else {
-    console.log("\n⚠️ No new items generated.");
+    console.log("\n ⚠️ No new items generated.");
     // Create empty file so workflow doesn't crash if it tries to read
     fs.writeFileSync(RELEASE_BODY_PATH, "");
   }
