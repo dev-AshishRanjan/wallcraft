@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -9,6 +9,23 @@ export const metadata: Metadata = {
   title: "WallCraft | Automated Wallpapers",
   description: "Daily 4K wallpapers generated with professional developer themes.",
   icons: "/logo.png",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "WallCraft",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#121212", // Default theme color for browser bar
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // Feels more 'native' app-like
 };
 
 export default function RootLayout({

@@ -1,8 +1,23 @@
-/** @type {import('next').NextConfig} */
+import withPWAInit from "@ducanh2912/next-pwa";
+
 const isProd = process.env.NODE_ENV === "production";
 const repoName = "wallcraft";
 
+const withPWA = withPWAInit({
+  dest: "public",
+  disable: !isProd,
+  // Cache strategies
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+});
+
+/** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    turbopack: false,
+  },
+  turbopack: {},
   output: "export",
   // basePath tells Next.js we are hosted in a subfolder
   basePath: isProd ? `/${repoName}` : "",
@@ -21,4 +36,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default withPWA(nextConfig);
