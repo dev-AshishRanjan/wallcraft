@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import axios from "axios";
 import { ensureDirectory, loadCategories, loadThemes } from "./utils";
 import { applyThemeToImage } from "./process";
+import { fileURLToPath } from "url";
 
 // Load environment variables
 dotenv.config();
@@ -194,7 +195,9 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error("Fatal Error:", err);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch(err => {
+    console.error("Fatal Error:", err);
+    process.exit(1);
+  });
+}

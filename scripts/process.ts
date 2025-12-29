@@ -5,6 +5,7 @@ import fs from 'fs';
 import dotenv from "dotenv";
 import { loadThemes, loadCategories, loadHistory, saveHistory, ensureDirectory, Theme } from './utils';
 import { updateDatabase } from './update-db';
+import { fileURLToPath } from "url";
 
 dotenv.config();
 
@@ -85,7 +86,7 @@ export async function applyThemeToImage(imageBuffer: Buffer, theme: Theme, outpu
 }
 
 // 3. Main Execution
-(async () => {
+async function main() {
   try {
     const outputDir = path.join(__dirname, '../output');
     ensureDirectory(outputDir); // 1. Fix: Ensure folder exists
@@ -193,4 +194,11 @@ ${themes.map(t => `- **${t.name}**`).join('\n')}
     console.error('❌ Error:', error);
     process.exit(1);
   }
-})();
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch(err => {
+    console.error("Fatal Error:", err);
+    process.exit(1);
+  });
+}
