@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { FadeInImage } from "./ui/fade-in-image";
+import { getAssetPath } from "@/lib/utils";
 
 export function Footer() {
   const { theme, setTheme } = useTheme();
@@ -35,8 +36,8 @@ export function Footer() {
             <Link href="/" className="flex items-center gap-2">
               <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
                 <FadeInImage
-                  src={"/logo.png"}
-                  alt={"W"}
+                  src={getAssetPath("/logo.png")}
+                  alt="W"
                   className="h-full w-full object-cover shadow-sm shadow-black/50 rounded-md"
                 />
               </div>

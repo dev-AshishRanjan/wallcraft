@@ -19,6 +19,9 @@ const nextConfig = {
   },
   turbopack: {},
   output: "export",
+  env: {
+    NEXT_PUBLIC_BASE_PATH: isProd ? `/${repoName}` : "",
+  },
   // basePath tells Next.js we are hosted in a subfolder
   basePath: isProd ? `/${repoName}` : "",
   // assetPrefix ensures CSS/JS chunks load from that subfolder

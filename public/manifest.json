@@ -2,7 +2,8 @@
   "name": "WallCraft Studio",
   "short_name": "WallCraft",
   "description": "Professional Wallpaper Theme Engine & Gallery",
-  "start_url": "/",
+  "start_url": "/wallcraft/",
+  "scope": "/wallcraft/",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#121212",
@@ -11,13 +12,13 @@
     {
       "purpose": "maskable",
       "sizes": "512x512",
-      "src": "/icons/icon512_maskable.png",
+      "src": "/wallcraft/icons/icon512_maskable.png",
       "type": "image/png"
     },
     {
       "purpose": "any",
       "sizes": "512x512",
-      "src": "/icons/icon512_rounded.png",
+      "src": "/wallcraft/icons/icon512_rounded.png",
       "type": "image/png"
     }
   ]

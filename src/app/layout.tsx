@@ -4,12 +4,17 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getAppConfig } from "@/lib/server-utils";
+import { getAssetPath } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "WallCraft | Automated Wallpapers",
   description: "Daily 4K wallpapers generated with professional developer themes.",
-  icons: "/logo.png",
-  manifest: "/manifest.json",
+  manifest: getAssetPath("/manifest.json"),
+  icons: {
+    icon: getAssetPath("/logo.png"),
+    shortcut: getAssetPath("/logo.png"),
+    apple: getAssetPath("/logo.png"),
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

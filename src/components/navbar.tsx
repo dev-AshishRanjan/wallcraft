@@ -7,7 +7,7 @@ import { Github, Menu, Wand2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CommandMenu } from "@/components/command-menu";
-import { cn } from "@/lib/utils";
+import { cn, getAssetPath } from "@/lib/utils";
 import { FadeInImage } from "./ui/fade-in-image";
 
 const ROUTES = [
@@ -101,8 +101,8 @@ export function Navbar({ themes, categories }: NavbarProps) {
                   <SheetTitle className="flex items-center gap-2">
                     <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground">
                       <FadeInImage
-                        src={"/logo.png"}
-                        alt={"W"}
+                        src={getAssetPath("/logo.png")}
+                        alt="W"
                         className="h-full w-full object-cover shadow-sm shadow-black/50 rounded-md"
                       />
                     </div>
