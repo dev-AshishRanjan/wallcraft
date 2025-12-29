@@ -61,7 +61,7 @@ export function WallpaperModal({
       <DialogContent className="max-w-[95vw] h-[90dvh] p-0 gap-0 bg-background border-border flex flex-col md:flex-row overflow-hidden focus:outline-none rounded-sm">
 
         {/* LEFT: Image Preview Area */}
-        <div className="flex-1 relative flex items-center justify-center p-4 md:p-8 bg-muted/20 overflow-hidden group z-50">
+        <div className="flex-1 relative flex items-center justify-center p-4 md:p-8 bg-muted/20 overflow-hidden group z-50 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]">
           <div className="relative w-full h-full flex items-center justify-center">
             <FadeInImage
               src={imageUrl}

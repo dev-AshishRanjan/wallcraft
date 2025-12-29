@@ -231,7 +231,7 @@ export function StudioClient({ themes }: StudioClientProps) {
             </Button>
           )}
         </div>
-        <div className="flex-1 overflow-hidden p-0 flex items-center justify-center bg-[url('/grid-pattern.svg')] bg-center relative">
+        <div className="flex-1 overflow-hidden p-0 flex items-center justify-center bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] relative">
           {processedUrl && previewUrl ? (
             <div className="relative w-full h-full p-8 flex items-center justify-center">
               <div className="relative shadow-2xl rounded-lg overflow-hidden border bg-background/50 max-w-full max-h-full animate-in zoom-in-95 duration-300">
