@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CommandMenu } from "@/components/command-menu";
 import { cn } from "@/lib/utils";
+import { FadeInImage } from "./ui/fade-in-image";
 
 const ROUTES = [
   { name: "Home", path: "/" },
@@ -32,7 +33,11 @@ export function Navbar({ themes, categories }: NavbarProps) {
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <span className="text-lg font-bold">W</span>
+              <FadeInImage
+                src={"/logo.png"}
+                alt={"W"}
+                className="h-full w-full object-cover shadow-sm shadow-black/50 rounded-md"
+              />
             </div>
             <span className="hidden font-bold tracking-tight sm:inline-block">
               WallCraft
@@ -95,7 +100,11 @@ export function Navbar({ themes, categories }: NavbarProps) {
                 <SheetHeader className="text-left border-b pb-4 mb-4">
                   <SheetTitle className="flex items-center gap-2">
                     <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground">
-                      <span className="text-xs font-bold">W</span>
+                      <FadeInImage
+                        src={"/logo.png"}
+                        alt={"W"}
+                        className="h-full w-full object-cover shadow-sm shadow-black/50 rounded-md"
+                      />
                     </div>
                     WallCraft
                   </SheetTitle>

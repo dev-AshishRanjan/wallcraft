@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
+import { FadeInImage } from "./ui/fade-in-image";
 
 export function Footer() {
   const { theme, setTheme } = useTheme();
@@ -33,7 +34,11 @@ export function Footer() {
           <div className="space-y-3">
             <Link href="/" className="flex items-center gap-2">
               <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
-                <span className="font-bold text-primary-foreground text-base">W</span>
+                <FadeInImage
+                  src={"/logo.png"}
+                  alt={"W"}
+                  className="h-full w-full object-cover shadow-sm shadow-black/50 rounded-md"
+                />
               </div>
               <span className="font-bold text-lg tracking-tight">WallCraft</span>
             </Link>

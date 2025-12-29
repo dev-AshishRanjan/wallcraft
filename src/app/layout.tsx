@@ -8,6 +8,7 @@ import { getAppConfig } from "@/lib/server-utils";
 export const metadata: Metadata = {
   title: "WallCraft | Automated Wallpapers",
   description: "Daily 4K wallpapers generated with professional developer themes.",
+  icons: "/logo.png",
 };
 
 export default function RootLayout({
