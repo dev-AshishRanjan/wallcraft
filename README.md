@@ -49,7 +49,7 @@ WallCraft uses a unique **"Decoupled Data"** architecture to remain free, scalab
 ### 1. Installation
 
 ```bash
-git clone [https://github.com/dev-AshishRanjan/wallcraft.git](https://github.com/dev-AshishRanjan/wallcraft.git)
+git clone https://github.com/dev-AshishRanjan/wallcraft.git
 cd wallcraft
 npm install
 ```
