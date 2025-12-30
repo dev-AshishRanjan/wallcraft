@@ -34,7 +34,7 @@ export function Navbar({ themes, categories }: NavbarProps) {
           <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <FadeInImage
-                src={"/logo.png"}
+                src={getAssetPath("/logo.png")}
                 alt={"W"}
                 className="h-full w-full object-cover shadow-sm shadow-black/50 rounded-md"
               />
