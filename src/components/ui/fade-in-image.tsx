@@ -14,7 +14,7 @@ interface FadeInImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
 export function FadeInImage({ src, alt, className, priority = false, ...props }: FadeInImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [isVisible, setIsVisible] = useState(priority); // If priority, load immediately
+  const [isVisible, setIsVisible] = useState(priority);
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +29,7 @@ export function FadeInImage({ src, alt, className, priority = false, ...props }:
           observer.disconnect();
         }
       },
-      { rootMargin: "50px" } // Start loading 50px before it appears
+      { rootMargin: "50px" }
     );
 
     if (containerRef.current) {
@@ -39,7 +39,6 @@ export function FadeInImage({ src, alt, className, priority = false, ...props }:
     return () => observer.disconnect();
   }, [priority, isVisible]);
 
-  // Reset state on src change
   useEffect(() => {
     setIsLoaded(false);
     setHasError(false);
@@ -49,21 +48,26 @@ export function FadeInImage({ src, alt, className, priority = false, ...props }:
     <div ref={containerRef} className="relative w-full h-full">
 
       {/* 1. Loader (Spinner) */}
-      {!isLoaded && !hasError && (
-        <div className="absolute inset-0 flex items-center justify-center z-10">
+      {!hasError && (
+        <div
+          className={cn(
+            "absolute inset-0 flex items-center justify-center z-10 transition-opacity duration-500 ease-out bg-muted/5",
+            isLoaded ? "opacity-0 pointer-events-none" : "opacity-100"
+          )}
+        >
           <Loader2 className="w-6 h-6 text-muted-foreground/40 animate-spin" />
         </div>
       )}
 
       {/* 2. Error State */}
       {hasError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground/50">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground/50 bg-muted/10">
           <ImageOff className="w-8 h-8 mb-2 opacity-50" />
           <span className="text-[10px] uppercase font-bold tracking-widest">Failed</span>
         </div>
       )}
 
-      {/* 3. The Image (Only renders if visible) */}
+      {/* 3. The Image */}
       {isVisible && (
         <img
           ref={imgRef}
@@ -71,7 +75,6 @@ export function FadeInImage({ src, alt, className, priority = false, ...props }:
           alt={alt}
           className={cn(
             "w-full h-full object-cover transition-all duration-700 ease-in-out will-change-[opacity,transform]",
-            // Blur-up Effect Logic
             isLoaded
               ? "opacity-100 scale-100 blur-0 grayscale-0"
               : "opacity-0 scale-110 blur-xl grayscale",
