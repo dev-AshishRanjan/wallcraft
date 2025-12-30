@@ -65,20 +65,12 @@ export function Navbar({ themes, categories }: NavbarProps) {
         {/* RIGHT: Search & Actions */}
         <div className="flex items-center gap-2 md:gap-4">
 
-          {/* 1. Command Search (Hidden on tiny screens, expanded on desktop) */}
+          {/* Command Search (Hidden on tiny screens, expanded on desktop) */}
           <div className="flex-1 md:flex-none">
             <CommandMenu themes={themes} categories={categories} />
           </div>
 
-          {/* 2. GitHub Icon (Desktop) */}
-          <Link href="https://github.com/dev-AshishRanjan/wallcraft" target="_blank" className="hidden md:flex">
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
-              <Github className="h-4 w-4" />
-              <span className="sr-only">GitHub</span>
-            </Button>
-          </Link>
-
-          {/* 3. CTA Button (Desktop - Shows 'Studio' unless we are IN studio) */}
+          {/* CTA Button (Desktop - Shows 'Studio' unless we are IN studio) */}
           {pathname !== '/studio' && (
             <Link href="/studio" className="hidden md:flex">
               <Button size="sm" className="font-bold">
@@ -87,7 +79,7 @@ export function Navbar({ themes, categories }: NavbarProps) {
             </Link>
           )}
 
-          {/* 4. Mobile Menu Trigger */}
+          {/* Mobile Menu Trigger */}
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
