@@ -283,7 +283,7 @@ function WallpapersContent() {
           <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 animate-in fade-in zoom-in-95 duration-500">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
             <div className="flex items-center gap-2 text-muted-foreground animate-pulse font-medium">
-              <Database className="w-4 h-4" />
+              {/* <Database className="w-4 h-4" /> */}
               <span>Connecting to database...</span>
             </div>
           </div>
@@ -293,7 +293,7 @@ function WallpapersContent() {
           <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 animate-in fade-in zoom-in-95 duration-300">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
             <div className="flex items-center gap-2 text-muted-foreground animate-pulse font-medium">
-              <Cloud className="w-4 h-4" />
+              {/* <Cloud className="w-4 h-4" /> */}
               <span>Switching to CDN...</span>
             </div>
           </div>

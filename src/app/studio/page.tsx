@@ -25,7 +25,7 @@ export default async function StudioPage() {
   // 1. Removed -mt-16 and pt-16 (The RootLayout handles the navbar offset).
   // 2. set height to calc(100vh - 4rem) so it perfectly fills the remaining screen space.
   return (
-    <div className="h-[calc(100vh-4rem)] w-full overflow-hidden bg-background">
+    <div className="h-auto lg:h-[calc(100vh-4rem)] w-full overflow-hidden bg-background">
       <StudioClient themes={themes} />
     </div>
   );

@@ -87,8 +87,8 @@ export function StudioClient({ themes }: StudioClientProps) {
     <div className="flex flex-col lg:flex-row h-full bg-background">
 
       {/* SIDEBAR */}
-      <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-card/30 flex flex-col shrink-0 overflow-hidden h-full">
-        <div className="p-4 border-b">
+      <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-card/30 flex flex-col shrink-0 overflow-hidden h-auto lg:h-full">
+        <div className="p-4 border-b h-14">
           <h2 className="font-bold flex items-center gap-2">
             <Settings2 className="w-4 h-4 text-primary" /> Configuration
           </h2>
@@ -218,7 +218,7 @@ export function StudioClient({ themes }: StudioClientProps) {
       </div>
 
       {/* WORKSPACE */}
-      <div className="flex-1 bg-muted/20 flex flex-col relative overflow-hidden h-full">
+      <div className="flex-1 bg-muted/20 flex flex-col relative overflow-hidden h-auto lg:h-full">
         <div className="h-14 border-b bg-background/50 backdrop-blur flex items-center justify-between px-6 shrink-0 z-10">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <ZoomIn className="w-4 h-4" />
