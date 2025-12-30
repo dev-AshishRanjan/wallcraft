@@ -4,40 +4,41 @@
 
 @layer base {
   :root {
-    /* DEFAULT: NORD THEME */
-    --background: 220 16% 22%;
-    /* Nord 0 #2E3440 */
+    /* Deep Arctic Blue Background (Darker than standard Nord) */
+    --background: 220 16% 13%;
+    /* #1c2128 */
     --foreground: 218 27% 92%;
-    /* Nord 4 #D8DEE9 */
+    /* #e5e9f0 */
 
-    --card: 222 16% 28%;
-    /* Nord 1 #3B4252 */
+    /* Cards slightly lighter to pop */
+    --card: 220 16% 16%;
+    /* #232831 */
     --card-foreground: 218 27% 92%;
 
-    --popover: 222 16% 28%;
+    --popover: 220 16% 16%;
     --popover-foreground: 218 27% 92%;
 
+    /* Signature Nord Cyan (Frost) */
     --primary: 193 43% 67%;
-    /* Nord 8 #88C0D0 */
-    --primary-foreground: 220 16% 22%;
+    /* #88C0D0 */
+    --primary-foreground: 220 16% 13%;
 
-    --secondary: 223 16% 32%;
-    /* Nord 2 #434C5E */
+    --secondary: 220 16% 22%;
+    /* #2e3440 */
     --secondary-foreground: 218 27% 92%;
 
-    --muted: 223 16% 32%;
-    --muted-foreground: 218 27% 92%;
+    --muted: 220 16% 22%;
+    --muted-foreground: 218 11% 65%;
 
-    --accent: 217 33% 62%;
-    /* Nord 9 #81A1C1 */
-    --accent-foreground: 220 16% 22%;
+    --accent: 220 16% 22%;
+    --accent-foreground: 218 27% 92%;
 
     --destructive: 354 42% 56%;
-    /* Nord 11 #BF616A */
-    --destructive-foreground: 218 27% 92%;
+    /* Nord Red */
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 223 16% 32%;
-    --input: 223 16% 32%;
+    --border: 220 16% 22%;
+    --input: 220 16% 22%;
     --ring: 193 43% 67%;
 
     --radius: 0.5rem;
@@ -45,29 +46,43 @@
 
   /* MIDNIGHT (Modern Dark) */
   [data-theme="midnight"] {
-    --background: 222 47% 11%;
-    /* #0f172a */
+    /* Pure Black for Amoled Screens */
+    --background: 0 0% 0%;
+    /* #000000 */
     --foreground: 210 40% 98%;
     /* #f8fafc */
-    --card: 217 33% 17%;
-    /* #1e293b */
+
+    /* Very subtle dark grey for cards (barely visible separation) */
+    --card: 0 0% 4%;
+    /* #0a0a0a */
     --card-foreground: 210 40% 98%;
-    --popover: 217 33% 17%;
+
+    --popover: 0 0% 4%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    /* #3b82f6 */
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 17%;
+
+    /* LUXURY GOLD ACCENT */
+    --primary: 47 100% 50%;
+    /* #FFD700 (Gold) */
+    --primary-foreground: 0 0% 0%;
+    /* Black Text on Gold Button */
+
+    --secondary: 0 0% 9%;
+    /* #171717 */
     --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
+
+    --muted: 0 0% 9%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217 33% 17%;
+
+    --accent: 0 0% 9%;
     --accent-foreground: 210 40% 98%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 224 76% 48%;
+
+    --border: 0 0% 12%;
+    /* Subtle borders */
+    --input: 0 0% 12%;
+    --ring: 47 100% 50%;
   }
 
   /* DAYLIGHT (Clean Light) */
