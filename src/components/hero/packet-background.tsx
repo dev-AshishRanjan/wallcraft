@@ -1,290 +1,265 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { CloudDownload, Palette, Check, X, Play, Image as ImageIcon } from "lucide-react";
 
 type Point = { x: number; y: number };
-type Status = "success" | "error";
-
-type Phase =
-  | "idle"
-  | "starting"
-  | "traveling-1"
-  | "fetching"
-  | "traveling-2"
-  | "processing"
-  | "traveling-3"
-  | "finished"
-  | "clearing";
+type Phase = "idle" | "starting" | "traveling-1" | "fetching" | "traveling-2" | "processing" | "traveling-3" | "finished" | "clearing";
 
 export function PacketBackground() {
-  const [mounted, setMounted] = useState(false);
-  const [cycle, setCycle] = useState(0);
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
-  const [status, setStatus] = useState<Status>("success");
+  const [status, setStatus] = useState<"success" | "error">("success");
 
-  const [points, setPoints] = useState<{ p1: Point; p2: Point; p3: Point; p4: Point }>({
-    p1: { x: 5, y: 50 }, p2: { x: 30, y: 50 }, p3: { x: 60, y: 50 }, p4: { x: 90, y: 50 },
+  // Ref for coordinates to ensure they don't shift during re-renders
+  const coordsRef = useRef<{ p1: Point; p2: Point; p3: Point; p4: Point }>({
+    p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 }, p3: { x: 0, y: 0 }, p4: { x: 0, y: 0 }
   });
 
-  const [paths, setPaths] = useState<{ path1: string; path2: string; path3: string }>({
-    path1: "", path2: "", path3: ""
-  });
+  const [paths, setPaths] = useState<{ path1: string; path2: string; path3: string }>({ path1: "", path2: "", path3: "" });
 
+  // --- 1. RESIZE OBSERVER (Robust Dimensions) ---
   useEffect(() => {
-    setMounted(true);
-    const timer = setTimeout(startSimulation, 1000);
-    return () => clearTimeout(timer);
+    const handleResize = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+
+    // Initial measure
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // --- 1. Geometry & Logic ---
-  const getRandomPoint = (section: 1 | 2 | 3 | 4) => {
-    const yMin = 20; const yMax = 80;
-    const randY = () => Math.floor(Math.random() * (yMax - yMin) + yMin);
-    if (section === 1) return { x: Math.floor(Math.random() * 5 + 5), y: randY() };
-    if (section === 2) return { x: Math.floor(Math.random() * 10 + 25), y: randY() };
-    if (section === 3) return { x: Math.floor(Math.random() * 10 + 55), y: randY() };
-    return { x: Math.floor(Math.random() * 5 + 85), y: randY() };
-  };
-
-  // FIX: New function to build paths with real rounded corners using Quadratic bezier curves (Q)
-  const buildRoundedPath = (start: Point, end: Point) => {
+  // --- 2. PATH BUILDER (Quadratic Bezier Curves) ---
+  const buildCurvedPath = useCallback((start: Point, end: Point) => {
     const midX = (start.x + end.x) / 2;
-    const r = 3; // Corner radius (in SVG units 0-100)
+    // Fixed radius ensures consistent corner shape regardless of distance
+    const r = 24;
+    const safeR = Math.min(r, Math.abs(midX - start.x) / 2, Math.abs(end.y - start.y) / 2);
 
-    // Calculate safe radius so corners don't overlap on short segments
-    const safeR = Math.min(r, Math.abs(midX - start.x) / 2, Math.abs(end.y - start.y) / 2, Math.abs(end.x - midX) / 2);
-
-    // Determine directions for the curve offset
     const dirX1 = midX > start.x ? 1 : -1;
     const dirY = end.y > start.y ? 1 : -1;
     const dirX2 = end.x > midX ? 1 : -1;
 
-    let d = `M ${start.x} ${start.y}`;
-    // Line to start of first corner
-    d += ` L ${midX - (safeR * dirX1)} ${start.y}`;
-    // Curve 1 (Horizontal to Vertical)
-    d += ` Q ${midX} ${start.y}, ${midX} ${start.y + (safeR * dirY)}`;
-    // Line to start of second corner
-    d += ` L ${midX} ${end.y - (safeR * dirY)}`;
-    // Curve 2 (Vertical to Horizontal)
-    d += ` Q ${midX} ${end.y}, ${midX + (safeR * dirX2)} ${end.y}`;
-    // Line to end
-    d += ` L ${end.x} ${end.y}`;
+    return [
+      `M ${start.x} ${start.y}`,
+      `L ${midX - (safeR * dirX1)} ${start.y}`,
+      `Q ${midX} ${start.y}, ${midX} ${start.y + (safeR * dirY)}`,
+      `L ${midX} ${end.y - (safeR * dirY)}`,
+      `Q ${midX} ${end.y}, ${midX + (safeR * dirX2)} ${end.y}`,
+      `L ${end.x} ${end.y}`
+    ].join(" ");
+  }, []);
 
-    return d;
-  };
+  // --- 3. COORDINATE LOGIC ---
+  const generateNewCoords = useCallback(() => {
+    if (!dimensions) return;
+    const { width, height } = dimensions;
 
-  // --- 2. Simulation Timeline ---
-  const startSimulation = () => {
-    if (!mounted && typeof window === "undefined") return;
+    // Margins to keep nodes away from absolute edges
+    const minY = height * 0.25;
+    const maxY = height * 0.75;
+    const randY = () => Math.floor(Math.random() * (maxY - minY) + minY);
 
-    const p1 = getRandomPoint(1);
-    const p2 = getRandomPoint(2);
-    const p3 = getRandomPoint(3);
-    const p4 = getRandomPoint(4);
-    const nextStatus = Math.random() > 0.9 ? "error" : "success";
+    const p1 = { x: width * 0.1, y: randY() };
+    const p2 = { x: width * 0.35, y: randY() };
+    const p3 = { x: width * 0.65, y: randY() };
+    const p4 = { x: width * 0.9, y: randY() };
 
-    setPoints({ p1, p2, p3, p4 });
+    coordsRef.current = { p1, p2, p3, p4 };
+
     setPaths({
-      // FIX: Use new rounded path builder
-      path1: buildRoundedPath(p1, p2),
-      path2: buildRoundedPath(p2, p3),
-      path3: buildRoundedPath(p3, p4),
+      path1: buildCurvedPath(p1, p2),
+      path2: buildCurvedPath(p2, p3),
+      path3: buildCurvedPath(p3, p4),
     });
-    setStatus(nextStatus);
-    setCycle(prev => prev + 1);
+    setStatus(Math.random() > 0.85 ? "error" : "success");
+  }, [dimensions, buildCurvedPath]);
 
-    // Sequence timeline (same as before)
-    setPhase("starting");
-    setTimeout(() => {
-      setPhase("traveling-1");
-      setTimeout(() => {
-        setPhase("fetching");
-        setTimeout(() => {
-          setPhase("traveling-2");
-          setTimeout(() => {
-            setPhase("processing");
-            setTimeout(() => {
-              setPhase("traveling-3");
-              setTimeout(() => {
-                setPhase("finished");
-                setTimeout(() => {
-                  setPhase("clearing");
-                  setTimeout(() => {
-                    setPhase("idle");
-                    setTimeout(startSimulation, 2000);
-                  }, 1000);
-                }, 3500);
-              }, 1500);
-            }, 2000);
-          }, 1500);
-        }, 1500);
-      }, 1500);
-    }, 1500);
-  };
+  // --- 4. STATE MACHINE (Atomic Transitions) ---
+  useEffect(() => {
+    if (!dimensions) return;
 
-  if (!mounted) return null;
+    let timeoutId: NodeJS.Timeout;
 
-  const isError = status === "error";
+    // Helper to schedule next phase
+    const next = (p: Phase, ms: number) => {
+      timeoutId = setTimeout(() => setPhase(p), ms);
+    };
+
+    switch (phase) {
+      case "idle":
+        if (dimensions.width > 0) {
+          generateNewCoords();
+          next("starting", 500);
+        }
+        break;
+      case "starting": next("traveling-1", 1000); break;
+      case "traveling-1": next("fetching", 1500); break; // Matches CSS animation duration
+      case "fetching": next("traveling-2", 2000); break;
+      case "traveling-2": next("processing", 1500); break;
+      case "processing": next("traveling-3", 2500); break;
+      case "traveling-3": next("finished", 1500); break;
+      case "finished": next("clearing", 3500); break;
+      case "clearing": next("idle", 1000); break;
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [phase, dimensions, generateNewCoords]);
+
+
+  // --- RENDER ---
+  if (!dimensions) return null;
+
+  const { p1, p2, p3, p4 } = coordsRef.current;
   const isClearing = phase === "clearing";
+  const isError = status === "error";
+
+  // Visibility flags
+  const showP1 = phase !== "idle";
+  const showP2 = ["fetching", "traveling-2", "processing", "traveling-3", "finished", "clearing"].includes(phase);
+  const showP3 = ["processing", "traveling-3", "finished", "clearing"].includes(phase);
+  const showP4 = ["finished", "clearing"].includes(phase);
 
   const showPath1 = ["traveling-1", "fetching", "traveling-2", "processing", "traveling-3", "finished", "clearing"].includes(phase);
   const showPath2 = ["traveling-2", "processing", "traveling-3", "finished", "clearing"].includes(phase);
   const showPath3 = ["traveling-3", "finished", "clearing"].includes(phase);
 
-  const showNode1 = phase !== "idle";
-  const showNode2 = ["fetching", "traveling-2", "processing", "traveling-3", "finished", "clearing"].includes(phase);
-  const showNode3 = ["processing", "traveling-3", "finished", "clearing"].includes(phase);
-  const showNode4 = ["finished", "clearing"].includes(phase);
-
   return (
     <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none select-none bg-background/50" aria-hidden="true">
 
-      <svg className="absolute inset-0 w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
-        <pattern id="grid-dots-detailed" width="24" height="24" patternUnits="userSpaceOnUse">
+      {/* 1. Grid Background */}
+      <svg className="absolute inset-0 w-full h-full opacity-[0.03] block" xmlns="http://www.w3.org/2000/svg">
+        <pattern id="grid-pattern" width="24" height="24" patternUnits="userSpaceOnUse">
           <circle cx="1" cy="1" r="1" fill="currentColor" />
         </pattern>
-        <rect width="100%" height="100%" fill="url(#grid-dots-detailed)" />
+        <rect width="100%" height="100%" fill="url(#grid-pattern)" />
       </svg>
 
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-
-        {/* --- SEGMENT 1 --- */}
+      {/* 2. SVG Paths (Z-Index 0) */}
+      <svg
+        width={dimensions.width}
+        height={dimensions.height}
+        className="absolute inset-0 z-0 block" // block is crucial to remove line-height spacing
+      >
+        {/* PATH 1 */}
         {showPath1 && paths.path1 && (
-          <>
-            <path
-              key={`p1-${cycle}`}
-              d={paths.path1}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.12"
-              strokeLinecap="round"
-              strokeLinejoin="round" // Ensures smooth joins on the new curves
+          <g>
+            <path d={paths.path1} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
               className={cn("text-primary/40 transition-opacity duration-700", isClearing ? "opacity-0" : "opacity-100")}
-              pathLength="1"
-              strokeDasharray="1"
-              strokeDashoffset="1"
+              pathLength="1" strokeDasharray="1" strokeDashoffset="1"
               style={{ animation: "reveal-path 1.5s linear forwards" }}
             />
             {phase === "traveling-1" && (
-              // FIX: Increased radius to 0.5 to ensure it looks perfectly circular
-              <circle r="0.5" fill="currentColor" className="text-primary"
-                style={{ offsetPath: `path("${paths.path1}")`, animation: "move-packet 1.5s linear forwards" }} />
+              <circle r="4" fill="currentColor" className="text-primary"
+                style={{ offsetPath: `path('${paths.path1}')`, animation: "move-packet 1.5s linear forwards" }}
+              />
             )}
-          </>
+          </g>
         )}
 
-        {/* --- SEGMENT 2 --- */}
+        {/* PATH 2 */}
         {showPath2 && paths.path2 && (
-          <>
-            <path
-              key={`p2-${cycle}`}
-              d={paths.path2}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.12"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <g>
+            <path d={paths.path2} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
               className={cn("text-primary/40 transition-opacity duration-700", isClearing ? "opacity-0" : "opacity-100")}
-              pathLength="1"
-              strokeDasharray="1"
-              strokeDashoffset="1"
+              pathLength="1" strokeDasharray="1" strokeDashoffset="1"
               style={{ animation: "reveal-path 1.5s linear forwards" }}
             />
             {phase === "traveling-2" && (
-              <circle r="0.5" fill="currentColor" className="text-primary"
-                style={{ offsetPath: `path("${paths.path2}")`, animation: "move-packet 1.5s linear forwards" }} />
+              <circle r="4" fill="currentColor" className="text-primary"
+                style={{ offsetPath: `path('${paths.path2}')`, animation: "move-packet 1.5s linear forwards" }}
+              />
             )}
-          </>
+          </g>
         )}
 
-        {/* --- SEGMENT 3 --- */}
+        {/* PATH 3 */}
         {showPath3 && paths.path3 && (
-          <>
-            <path
-              key={`p3-${cycle}`}
-              d={paths.path3}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.12"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={cn(
-                "transition-opacity duration-700",
-                isError ? "text-red-500/50" : "text-primary/40",
-                isClearing ? "opacity-0" : "opacity-100"
-              )}
-              pathLength="1"
-              strokeDasharray="1"
-              strokeDashoffset="1"
+          <g>
+            <path d={paths.path3} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+              className={cn("transition-opacity duration-700", isError ? "text-red-500/50" : "text-primary/40", isClearing ? "opacity-0" : "opacity-100")}
+              pathLength="1" strokeDasharray="1" strokeDashoffset="1"
               style={{ animation: "reveal-path 1.5s linear forwards" }}
             />
             {phase === "traveling-3" && (
-              <circle r="0.5" fill="currentColor" className={isError ? "text-red-500" : "text-primary"}
-                style={{ offsetPath: `path("${paths.path3}")`, animation: "move-packet 1.5s linear forwards" }} />
+              <circle r="4" fill="currentColor" className={isError ? "text-red-500" : "text-primary"}
+                style={{ offsetPath: `path('${paths.path3}')`, animation: "move-packet 1.5s linear forwards" }}
+              />
             )}
-          </>
+          </g>
         )}
       </svg>
 
-
-      {/* 3. HTML Nodes (Same as before) */}
+      {/* 3. HTML Nodes (Z-Index 10) */}
+      {/* CRITICAL FIX: 
+          We position the wrapper div at (x,y).
+          We translate it -50% -50% so (x,y) is exactly in the center of the wrapper.
+          The Icon Box inside is flex-centered.
+          The Text Labels are ABSOLUTE positioned outside the flow, so they don't shift the center point.
+      */}
 
       {/* NODE 1: START */}
       <div
-        className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-700", showNode1 && !isClearing ? "opacity-100 scale-100" : "opacity-0 scale-50")}
-        style={{ left: `${points.p1.x}%`, top: `${points.p1.y}%` }}
+        className={cn("absolute z-10 left-0 top-0 transition-all duration-700", showP1 && !isClearing ? "opacity-100 scale-100" : "opacity-0 scale-50")}
+        style={{ transform: `translate(${p1.x}px, ${p1.y}px) translate(-50%, -50%)` }}
       >
-        <div className="relative">
-          {phase === "starting" && <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />}
-          <div className="relative bg-card border border-border p-2 rounded-full shadow-sm">
-            <Play className="w-3 h-3 fill-muted-foreground text-muted-foreground ml-0.5" />
+        {/* Icon Box - Perfectly Centered */}
+        <div className="bg-card border border-border p-2 rounded-full shadow-sm relative">
+          <div className="w-4 h-4 flex items-center justify-center">
+            <Play className="w-3 h-3 text-muted-foreground ml-0.5" />
           </div>
+          {/* Pulse Ring */}
+          {phase === "starting" && <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />}
         </div>
       </div>
 
       {/* NODE 2: FETCH */}
       <div
-        className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500", showNode2 && !isClearing ? "opacity-100 scale-100" : "opacity-0 scale-50")}
-        style={{ left: `${points.p2.x}%`, top: `${points.p2.y}%` }}
+        className={cn("absolute z-10 left-0 top-0 transition-all duration-500", showP2 && !isClearing ? "opacity-100 scale-100" : "opacity-0 scale-50")}
+        style={{ transform: `translate(${p2.x}px, ${p2.y}px) translate(-50%, -50%)` }}
       >
-        <div className="flex flex-col items-center gap-1">
-          <div className="relative">
-            {phase === "fetching" && <div className="absolute inset-0 bg-primary/20 rounded-md animate-ping" />}
-            <div className="relative bg-background border border-border p-2 rounded-md shadow-md">
-              <CloudDownload className={cn("w-4 h-4 text-muted-foreground", phase === "fetching" && "animate-bounce")} />
-            </div>
+        <div className="bg-background border border-border p-2 rounded-md shadow-md relative">
+          <div className="w-5 h-5 flex items-center justify-center">
+            <CloudDownload className={cn("w-4 h-4 text-muted-foreground", phase === "fetching" && "animate-bounce")} />
           </div>
-          {phase === "fetching" && (
-            <span className="absolute top-10 text-[9px] font-mono whitespace-nowrap bg-background/90 px-1 rounded border animate-in fade-in slide-in-from-top-1">Fetching...</span>
-          )}
+          {phase === "fetching" && <div className="absolute inset-0 bg-primary/20 rounded-md animate-ping" />}
         </div>
+        {/* Label: Absolute position so it doesn't affect centering */}
+        {phase === "fetching" && (
+          <div className="absolute top-[120%] left-1/2 -translate-x-1/2 bg-background/90 px-1.5 py-0.5 rounded border text-[9px] font-mono whitespace-nowrap animate-in fade-in slide-in-from-top-1">
+            Fetching...
+          </div>
+        )}
       </div>
 
       {/* NODE 3: THEME */}
       <div
-        className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500", showNode3 && !isClearing ? "opacity-100 scale-100" : "opacity-0 scale-50")}
-        style={{ left: `${points.p3.x}%`, top: `${points.p3.y}%` }}
+        className={cn("absolute z-10 left-0 top-0 transition-all duration-500", showP3 && !isClearing ? "opacity-100 scale-100" : "opacity-0 scale-50")}
+        style={{ transform: `translate(${p3.x}px, ${p3.y}px) translate(-50%, -50%)` }}
       >
-        <div className="flex flex-col items-center gap-1">
-          <div className="relative">
-            {phase === "processing" && <div className="absolute inset-0 bg-primary/20 rounded-md animate-ping" />}
-            <div className="relative bg-background border border-border p-2 rounded-md shadow-md">
-              <Palette className={cn("w-4 h-4", phase === "processing" ? "text-primary animate-pulse" : "text-muted-foreground")} />
-            </div>
+        <div className="bg-background border border-border p-2 rounded-md shadow-md relative">
+          <div className="w-5 h-5 flex items-center justify-center">
+            <Palette className={cn("w-4 h-4", phase === "processing" ? "text-primary animate-pulse" : "text-muted-foreground")} />
           </div>
-          {phase === "processing" && (
-            <span className="absolute top-10 text-[9px] font-mono whitespace-nowrap bg-background/90 px-1 rounded border animate-in fade-in slide-in-from-top-1">Processing...</span>
-          )}
+          {phase === "processing" && <div className="absolute inset-0 bg-primary/20 rounded-md animate-ping" />}
         </div>
+        {phase === "processing" && (
+          <div className="absolute top-[120%] left-1/2 -translate-x-1/2 bg-background/90 px-1.5 py-0.5 rounded border text-[9px] font-mono whitespace-nowrap animate-in fade-in slide-in-from-top-1">
+            Processing...
+          </div>
+        )}
       </div>
 
       {/* NODE 4: RESULT */}
       <div
-        className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500", showNode4 && !isClearing ? "opacity-100 scale-100" : "opacity-0 scale-50")}
-        style={{ left: `${points.p4.x}%`, top: `${points.p4.y}%` }}
+        className={cn("absolute z-10 left-0 top-0 transition-all duration-500", showP4 && !isClearing ? "opacity-100 scale-100" : "opacity-0 scale-50")}
+        style={{ transform: `translate(${p4.x}px, ${p4.y}px) translate(-50%, -50%)` }}
       >
         <div className={cn("flex items-center gap-2 bg-background border px-3 py-1.5 rounded-lg shadow-xl", isError ? "border-red-500/30" : "border-primary/30")}>
           {isError ? <X className="w-4 h-4 text-red-500" /> : <ImageIcon className="w-4 h-4 text-primary" />}
@@ -295,7 +270,7 @@ export function PacketBackground() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
         @keyframes reveal-path {
           from { stroke-dashoffset: 1; }
           to { stroke-dashoffset: 0; }
