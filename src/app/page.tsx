@@ -4,6 +4,10 @@ import path from "path";
 import { ArrowRight, Zap, Layers, Palette, Github, Clock, Tag, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { HeroBackground } from "@/components/hero/hero-background";
+import { WorkflowBackground } from "@/components/hero/workflow-background";
+import { NetworkBackground } from "@/components/hero/network-background";
+import { PacketBackground } from "@/components/hero/packet-background";
 
 // --- SERVER SIDE LOGIC ---
 async function getAppStats() {
@@ -40,8 +44,8 @@ export default async function HomePage() {
 
       {/* 1. HERO SECTION */}
       <section className="relative pt-32 py-20 md:py-32 overflow-hidden">
+        <PacketBackground />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-nord-8/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
-
         <div className="container mx-auto px-4 text-center max-w-4xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nord-1 border border-nord-2 text-nord-8 text-xs font-medium mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <span className="relative flex h-2 w-2">
