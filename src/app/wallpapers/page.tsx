@@ -233,20 +233,43 @@ function WallpapersContent() {
               {/* Category */}
               <Popover open={openCategoryCombo} onOpenChange={setOpenCategoryCombo}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" aria-expanded={openCategoryCombo} className="w-full sm:w-[200px] justify-between h-9 bg-card px-3">
-                    <span className="truncate flex-1 text-left">{categoryFilter === "All" ? "Filter Category..." : categoryFilter}</span>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCategoryCombo}
+                    className="w-full sm:w-[200px] justify-between h-9 bg-card px-3"
+                  >
+                    <span className="truncate flex-1 text-left">
+                      {categoryFilter === "All" ? "Filter Category..." : categoryFilter}
+                    </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
+
+                <PopoverContent
+                  className="w-[--radix-popover-trigger-width] p-0"
+                  align="start"
+                >
                   <Command>
                     <CommandInput placeholder="Search category..." />
-                    <CommandList className="max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    <CommandList className="overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                       <CommandEmpty>No category found.</CommandEmpty>
                       <CommandGroup>
                         {categories.map((cat) => (
-                          <CommandItem key={cat} value={cat} onSelect={() => updateCategory(cat)}>
-                            <Check className={cn("mr-2 h-4 w-4", categoryFilter === cat ? "opacity-100" : "opacity-0")} />
+                          <CommandItem
+                            key={cat}
+                            value={cat}
+                            onSelect={() => {
+                              updateCategory(cat);
+                              setOpenCategoryCombo(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                categoryFilter === cat ? "opacity-100" : "opacity-0"
+                              )}
+                            />
                             <span className="truncate">{cat}</span>
                           </CommandItem>
                         ))}
